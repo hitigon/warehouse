@@ -11,7 +11,7 @@ from model import db
 repo = db.repo
 
 
-def create(name, path, scm='git', project=None, tag=None):
+def create(name, path, scm='git', project=None, tags=None):
     project = (project is not None and ObjectId.is_valid(
         project)) and ObjectId(project) or None
     spec = {
@@ -19,7 +19,7 @@ def create(name, path, scm='git', project=None, tag=None):
         'path': path,
         'scm': scm,
         'project': project,
-        'tags': tag
+        'tags': tags
     }
     try:
         repo_id = repo.insert(spec)
@@ -29,14 +29,14 @@ def create(name, path, scm='git', project=None, tag=None):
     return False
 
 
-def query(sepc_or_id):
-    if sepc_or_id is None:
+def query(spec_or_id):
+    if spec_or_id is None:
         return None
     try:
-        if ObjectId.is_valid(sepc_or_id):
-            result = repo.find_one(ObjectId(sepc_or_id))
+        if ObjectId.is_valid(spec_or_id):
+            result = repo.find_one(ObjectId(spec_or_id))
         else:
-            result = repo.find_one(sepc_or_id)
+            result = repo.find_one(spec_or_id)
         result['_id'] = str(result['_id'])
         project = result['project']
         if project is not None:
@@ -49,7 +49,7 @@ def query(sepc_or_id):
 
 def query_all():
     try:
-        items = db.repo.find()
+        items = repo.find()
         if items:
             result = {}
             for item in items:
@@ -81,14 +81,14 @@ def update(name_or_id, document):
     return False
 
 
-def delete(sepc_or_id):
-    if sepc_or_id is None:
+def delete(spec_or_id):
+    if spec_or_id is None:
         return False
     try:
-        if ObjectId.is_valid(sepc_or_id):
-            repo.remove(ObjectId(sepc_or_id))
+        if ObjectId.is_valid(spec_or_id):
+            repo.remove(ObjectId(spec_or_id))
         else:
-            repo.remove(sepc_or_id)
+            repo.remove(spec_or_id)
         return True
     except errors.OperationFailure as e:
         print(e)
@@ -105,7 +105,5 @@ def delete_all():
 
 
 def create_indexes():
-    result = repo.ensure_index('name', unique=True)
-    if result is None:
-        return False
-    return True
+    name = repo.ensure_index('name', unique=True)
+    return name is not None

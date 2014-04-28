@@ -35,4 +35,6 @@ def disconnect(client):
     client.disconnect()
 
 client = connect(DB_HOST, DB_PORT)
-db = get_db(client, DB_DATABASE)
+
+if client:
+    db = get_db(client, DB_DATABASE)

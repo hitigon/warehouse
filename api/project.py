@@ -5,10 +5,20 @@
 # @author: hitigon@gmail.com
 from __future__ import print_function
 import tornado.web
-from bson import ObjectId
-from model import repo
-from . import get_respmsg
+#from bson import ObjectId
+#from . import get_respmsg
 
 
-class RepoHandler(tornado.web.RequestHandler):
-    pass
+class ProjectHandler(tornado.web.RequestHandler):
+
+    def get(self):
+        pass
+
+    def post(self):
+        pass
+
+    def put(self):
+        pass
+
+    def delete(self):
+        pass
