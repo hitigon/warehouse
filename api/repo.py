@@ -2,7 +2,7 @@
 #
 # @name: api/repo.py
 # @create: Apr. 22th, 2014
-# @update: Aug. 15th, 2014
+# @update: Aug. 17th, 2014
 # @author: hitigon@gmail.com
 from __future__ import print_function
 import json
@@ -33,34 +33,33 @@ class RepoHandler(BaseHandler):
         response = {}
         try:
             user = kwargs['user']
-            git_type = None
-            contents = None
+            repo_type = None
+            repo_query = None
+            repo_contents = None
+            repo_branches = None
+            repo_tags = None
             if len(args) > 0:
                 path = parse_path(args[0])
                 repo = Repo.objects(owner=user, name=path[0]).first()
-                git_repo = GitRepo(repo.path)
-                git_type, contents = get_repo_contents(git_repo, path[1:])
-                # print(git_type, contents)
+                scm_repo = GitRepo(repo.path)
+                repo_branches, repo_tags = get_repo_branches_tags(scm_repo)
+                repo_type, repo_query, repo_contents = get_repo_contents(
+                    scm_repo, path[1:])
             else:
                 repo = Repo.objects(owner=user).all()
             repo_data = json.loads(repo.to_json())
-            if git_type and contents:
-                if git_type == 'tree':
-                    repo_data['files'] = contents
-                elif git_type == 'blob':
-                    repo_data['file'] = contents
-                elif git_type == 'commit':
-                    repo_data['commit'] = contents
-                elif git_type == 'patch':
-                    repo_data['patch'] = contents
-                elif git_type == 'info':
-                    repo_data['info'] = contents
+            if repo_type and repo_contents:
+                repo_data['repo_type'] = repo_type
+                repo_data['repo_branches'] = repo_branches
+                repo_data['repo_tags'] = repo_tags
+                repo_data['repo_contents'] = repo_contents
+                repo_data['repo_query'] = repo_query
             msg = 'Repo found'
             response = self.get_response(
                 data=repo_data, success=QuerySuccess(msg))
         except Exception as e:
             response = self.get_response(error=e)
-        # print(response)
+        print(response)
         self.write(response)
 
     @authenticated(scopes=['repos'])
@@ -88,21 +87,21 @@ class RepoHandler(BaseHandler):
         self.write(response)
 
     def put(self,  *args, **kwargs):
-        name = self.get_argument('name', None)
-        path = self.get_argument('path', None)
-        scm = self.get_argument('scm', None)
-        tags = self.get_argument('tags', None)
+        # name = self.get_argument('name', None)
+        # path = self.get_argument('path', None)
+        # scm = self.get_argument('scm', None)
+        # tags = self.get_argument('tags', None)
 
-        update = {}
-        if name:
-            update['name'] = name
-        if path:
-            update['path'] = path
-        if scm:
-            update['scm'] = scm
-        if tags:
-            update['tags'] = [str(tag).strip() for tag in tags.split(',')]
-        document = {'$set': update}
+        # update = {}
+        # if name:
+        #     update['name'] = name
+        # if path:
+        #     update['path'] = path
+        # if scm:
+        #     update['scm'] = scm
+        # if tags:
+        #     update['tags'] = [str(tag).strip() for tag in tags.split(',')]
+        # document = {'$set': update}
         # if repo.update(query_id, document):
         #     data = repo.query(query_id)
         #     response = get_respmsg(1001, data)
@@ -128,34 +127,49 @@ def get_repo_contents(scm_repo, fields):
     try:
         obj_type = fields[0]
     except IndexError:
-        return 'tree', scm_repo.get_current_root()
+        return 'tree', 'master', scm_repo.get_current_root()
     response = None
+    current_query = None
     if obj_type == 'info':
         response = scm_repo.get_info()
     elif obj_type == 'tree' or obj_type == 'blob':
         if len(fields) >= 2:
             query = fields[1]
+            # no remote branch is allowed
             branch = scm_repo.check_branch(query)
             tag = scm_repo.check_tag(query)
             if branch:
                 commit = scm_repo.get_commit_by_branch(branch)
+                current_query = branch.branch_name[11:]
             elif tag:
                 commit = scm_repo.get_commit_by_tag(tag)
-            # else:
-            #     commit = scm_repo.get_commit(query)
+                current_query = tag.name[10:]
+            else:
+                # query is a commit id
+                commit = scm_repo.get_commit(query)
+                current_query = query
             fields = fields[2:]
             if obj_type == 'tree':
                 response = scm_repo.get_tree_by_commit(commit, fields)
             else:
                 response = scm_repo.get_blob_by_commit(commit, fields)
     elif obj_type == 'commit' and len(fields) >= 2:
-        query = fields[1]
-        if scm_repo.check_branch(query):
-            response = scm_repo.get_commits_by_branch(query, fields[2:])
-        elif scm_repo.check_tag(query):
-            response = scm_repo.get_commits_by_tag(query, fields[2:])
-        else:
-            response = scm_repo.get_commit(query)
+        response = scm_repo.get_commit(fields[1])
     elif obj_type == 'patch' and len(fields) == 2:
         response = scm_repo.get_patches(fields[1])
-    return obj_type, response
+    return obj_type, current_query, response
+
+
+def get_repo_branches_tags(scm_repo):
+    refs = scm_repo.get_all_references()
+    branches = []
+    tags = []
+    try:
+        for ref in refs:
+            if 'refs/heads/' in ref:
+                branches.append(ref[11:])
+            elif 'refs/tags/' in ref:
+                tags.append(ref[10:])
+    except Exception as e:
+        print(e)
+    return branches, tags

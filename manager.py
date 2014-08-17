@@ -1,7 +1,8 @@
 #!/usr/bin/env python
 #
 # @name: manager.py
-# @date: Apr. 22th, 2014
+# @create: Apr. 22th, 2014
+# @update: Aug. 17th, 2014
 # @author: hitigon@gmail.com
 import logging
 import sys

@@ -87,17 +87,16 @@ class GitRepo(object):
         return self.__repo.lookup_branch(name, branch_type)
 
     def check_branch(self, name, branch_type=None):
-        branches = self.get_all_branches(branch_type)
-        for branch in branches:
-            if name in branch:
-                if not branch_type:
-                    if '/' in branch:
-                        branch_type = GIT_BRANCH_REMOTE
-                    else:
-                        branch_type = GIT_BRANCH_LOCAL
-                result = self.get_branch(branch, branch_type)
-                return result
-        return False
+        if not branch_type:
+            if '/' in name:
+                branch_type = GIT_BRANCH_REMOTE
+            else:
+                branch_type = GIT_BRANCH_LOCAL
+        try:
+            result = self.get_branch(name, branch_type)
+            return result
+        except Exception:
+            return False
 
     def get_current_commit(self):
         if not self.__repo:
@@ -110,9 +109,10 @@ class GitRepo(object):
             return None
         query = 'refs/'
         if hasattr(branch, 'remote_name'):
-            query += 'remotes/' + branch.branch_name
+            query += 'remotes/'
         else:
-            query += 'heads/' + branch.branch_name
+            query += 'heads/'
+        query += branch.branch_name
         try:
             ref = self.get_reference(query)
             commit = ref.target
