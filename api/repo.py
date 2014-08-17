@@ -22,7 +22,7 @@ class RepoHandler(BaseHandler):
         # plus any repos in his/her projects
         # what about team members, and project members' repos? TBD
         # /repos
-        # /repos/:id
+        # /repos/:id/../../.../
         # /repos?username=
         # /repos?team=
         # /repos?project=
@@ -133,15 +133,16 @@ def get_repo_contents(scm_repo, fields):
     if obj_type == 'info':
         response = scm_repo.get_info()
     elif obj_type == 'tree' or obj_type == 'blob':
-        if len(fields) > 2 or len(fields) == 2:
-
+        if len(fields) >= 2:
             query = fields[1]
-            if scm_repo.check_branch(query):
-                commit = scm_repo.get_commit_by_branch(query)
-            elif scm_repo.check_tag(query):
-                commit = scm_repo.get_commit_by_tag(query)
-            else:
-                commit = scm_repo.get_commit(query)
+            branch = scm_repo.check_branch(query)
+            tag = scm_repo.check_tag(query)
+            if branch:
+                commit = scm_repo.get_commit_by_branch(branch)
+            elif tag:
+                commit = scm_repo.get_commit_by_tag(tag)
+            # else:
+            #     commit = scm_repo.get_commit(query)
             fields = fields[2:]
             if obj_type == 'tree':
                 response = scm_repo.get_tree_by_commit(commit, fields)

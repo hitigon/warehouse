@@ -1,7 +1,8 @@
 #!/usr/bin/env python
 #
 # @name: scm/git.py
-# @date: Apr. 21th, 2014
+# @create: Apr. 21th, 2014
+# @update: Aug. 17th, 2014
 # @author: hitigon@gmail.com
 from __future__ import unicode_literals
 from __future__ import print_function
@@ -9,8 +10,7 @@ from pygit2 import Repository
 from pygit2 import Commit
 from pygit2 import GIT_OBJ_COMMIT, GIT_OBJ_TREE
 from pygit2 import GIT_OBJ_BLOB, GIT_OBJ_TAG
-from pygit2 import GIT_BRANCH_LOCAL
-from pygit2 import Settings
+from pygit2 import GIT_BRANCH_LOCAL, GIT_BRANCH_REMOTE
 
 
 def tree_walker(repo, oid, pid=None):
@@ -38,13 +38,12 @@ class GitRepo(object):
     def __init__(self, path):
         try:
             self.__repo = Repository(path)
-            # print('____', float(Settings().mwindow_size)/float(1024))
         except KeyError as e:
             self.__repo = None
             print(e)
 
     def get_info(self):
-        if self.__repo is None:
+        if not self.__repo:
             return None
         signature = self.__repo.default_signature
         result = {
@@ -59,8 +58,11 @@ class GitRepo(object):
         }
         return result
 
+    def get_all_references(self):
+        return self.__repo.listall_references()
+
     def get_reference(self, name):
-        if self.__repo is None:
+        if not self.__repo:
             return None
         ref = None
         try:
@@ -75,51 +77,67 @@ class GitRepo(object):
         if not self.__repo:
             return None
         if branch_type:
-            return self.__repo.listall_braches(branch_type)
-        return self.__repo.listall_braches()
+            return self.__repo.listall_branches(branch_type)
+        r = self.__repo.listall_branches(GIT_BRANCH_LOCAL | GIT_BRANCH_REMOTE)
+        return r
 
     def get_branch(self, name, branch_type=GIT_BRANCH_LOCAL):
-        if self.__repo is None:
+        if not self.__repo:
             return None
         return self.__repo.lookup_branch(name, branch_type)
 
-    def check_branch(self, name, branch_type=GIT_BRANCH_LOCAL):
-        return self.get_branch(name, branch_type) is not None
+    def check_branch(self, name, branch_type=None):
+        branches = self.get_all_branches(branch_type)
+        for branch in branches:
+            if name in branch:
+                if not branch_type:
+                    if '/' in branch:
+                        branch_type = GIT_BRANCH_REMOTE
+                    else:
+                        branch_type = GIT_BRANCH_LOCAL
+                result = self.get_branch(branch, branch_type)
+                return result
+        return False
 
     def get_current_commit(self):
-        if self.__repo is None:
+        if not self.__repo:
             return None
         commit = self.__repo.revparse_single('HEAD')
         return self.get_commit(commit)
 
-    def get_commit_by_branch(self, name):
-        if self.__repo is None:
+    def get_commit_by_branch(self, branch):
+        if not self.__repo:
             return None
-        if self.check_branch(name):
-            ref = self.get_reference('refs/heads/' + name)
-            if ref:
-                commit = ref.target
-                return self.get_commit(commit)
-        return None
+        query = 'refs/'
+        if hasattr(branch, 'remote_name'):
+            query += 'remotes/' + branch.branch_name
+        else:
+            query += 'heads/' + branch.branch_name
+        try:
+            ref = self.get_reference(query)
+            commit = ref.target
+            return self.get_commit(commit)
+        except Exception as e:
+            print(e)
+            return None
 
-    def get_commit_by_tag(self, name):
+    def get_commit_by_tag(self, tag):
         if self.__repo is None:
             return None
-        ref = self.get_reference('refs/tags/' + name)
-        if ref:
-                commit = ref.target
-                return self.get_commit(commit)
+        if tag:
+            commit = tag.get_object()
+            return self.get_commit(commit)
         return None
 
     def get_commit(self, oid_or_commit):
         ''' return a commit w/ json '''
-        if self.__repo is None or oid_or_commit is None:
+        if not self.__repo or not oid_or_commit:
             return None
         try:
             commit = oid_or_commit
             if not isinstance(oid_or_commit, Commit):
                 commit = self.__repo.get(oid_or_commit)
-            if commit is not None and commit.type == GIT_OBJ_COMMIT:
+            if commit and commit.type == GIT_OBJ_COMMIT:
                 result = {
                     'id': str(commit.id),
                     'author': commit.author.name,
@@ -146,7 +164,7 @@ class GitRepo(object):
         return result
 
     def get_commits_by_branch(self, name, path=None):
-        if self.__repo is None:
+        if not self.__repo:
             return None
         if self.check_branch(name):
             ref = self.get_reference('refs/heads/' + name)
@@ -160,22 +178,28 @@ class GitRepo(object):
                 return result
         return None
 
-    def get_commits_by_tag(self, name, path=None):
-        if self.__repo is None:
+    def check_tag(self, name):
+        try:
+            ref = self.get_reference('refs/tags/' + name)
+            return ref
+        except Exception:
+            return False
+
+    def get_commits_by_tag(self, tag, path=None):
+        if not self.__repo:
             return None
-        ref = self.get_reference('refs/tags/' + name)
-        if ref:
-                commit = ref.target
-                commits = self.get_commits(commit)
-                result = {}
-                for key, val in commits.items():
-                    if self.check_commit_by_path(val, path):
-                        result[key] = val
-                return result
+        if tag:
+            commit = tag.target
+            commits = self.get_commits(commit)
+            result = {}
+            for key, val in commits.items():
+                if self.check_commit_by_path(val, path):
+                    result[key] = val
+            return result
         return None
 
     def check_commit_by_path(self, commit, path):
-        if commit is None:
+        if not commit:
             return False
         if path is None or len(path) == 0:
             return True
@@ -284,11 +308,11 @@ class GitRepo(object):
 
     def get_tag(self, oid):
         ''' blob w/ json '''
-        if self.__repo is None or oid is None:
+        if not self.__repo or not oid:
             return None
         try:
             tag = self.__repo.get(oid)
-            if tag is not None and tag.type == GIT_OBJ_TAG:
+            if tag and tag.type == GIT_OBJ_TAG:
                 result = {
                     'id': str(oid),
                     'name': tag.name,
@@ -301,11 +325,8 @@ class GitRepo(object):
             print(e)
         return None
 
-    def check_tag(self, name):
-        return self.get_reference(name) is not None
-
     def get_patches(self, a, b=None):
-        if self.__repo is None or a is None:
+        if not self.__repo or not a:
             return None
 
         tree_a = self.__repo.get(a).tree

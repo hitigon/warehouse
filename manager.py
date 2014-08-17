@@ -33,7 +33,7 @@ application = tornado.web.Application([
     (r'/users/([\w.]+)/?', user.UserHandler),
     (r'/users/([\w.]+)/(edit|delete)/?', user.UserHandler),
     (r'/repos/?', repo.RepoHandler),
-    (r'/repos/([\w\-./]+)+', repo.RepoHandler),
+    (r'/repos/([\w\-._/]+)+', repo.RepoHandler),
     #(r"/repos/([\w.]+)/([\w.@/]+)/?", repo.RepoHandler),
     (r'/projects/?', project.ProjectHandler),
     (r'/projects/([\w.]+)/?', project.ProjectHandler),
