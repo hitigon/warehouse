@@ -1,16 +1,12 @@
-warehouse
+Warehouse
 =========
 
 requirements:
+-------------
 
-python 2.7
+python 2.7 / tornado / libgit2 / pygit2 / MongoDB / PyMongo / oauthlib
 
-tornado
 
-libgit2
+notes:
 
-pygit2
-
-MongoDB
-
-PyMongo
+Recently, I am rewriting my previous code, so the program is not workable now.
