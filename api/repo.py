@@ -140,14 +140,12 @@ def get_repo_contents(scm_repo, fields):
             tag = scm_repo.check_tag(query)
             if branch:
                 commit = scm_repo.get_commit_by_branch(branch)
-                current_query = branch.branch_name[11:]
             elif tag:
                 commit = scm_repo.get_commit_by_tag(tag)
-                current_query = tag.name[10:]
             else:
                 # query is a commit id
                 commit = scm_repo.get_commit(query)
-                current_query = query
+            current_query = query
             fields = fields[2:]
             if obj_type == 'tree':
                 response = scm_repo.get_tree_by_commit(commit, fields)
