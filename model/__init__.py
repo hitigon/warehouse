@@ -9,9 +9,10 @@ from pymongo import MongoClient
 from pymongo import errors
 from config import DB_DATABASE, DB_HOST, DB_PORT
 
+
 __all__ = ['db', 'client']
 
-
+'''
 def connect(host, port):
     client = None
     try:
@@ -38,3 +39,7 @@ client = connect(DB_HOST, DB_PORT)
 
 if client:
     db = get_db(client, DB_DATABASE)
+'''
+
+db = None
+client = None

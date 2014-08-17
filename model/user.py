@@ -51,7 +51,7 @@ def query_all():
             result = {}
             for item in items:
                 item['_id'] = str(item['_id'])
-                result[item['username']] = item
+                result[item['_id']] = item
             return result
     except TypeError as e:
         print(e)
@@ -101,7 +101,6 @@ def delete_all():
 def create_indexes():
     username = user.ensure_index('username', unique=True)
     email = user.ensure_index('email', unique=True)
-    uuid = user.ensure_index('uuid', unique=True)
-    if username and email and uuid:
+    if username and email:
         return True
     return False

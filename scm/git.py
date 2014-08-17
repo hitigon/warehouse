@@ -10,6 +10,7 @@ from pygit2 import Commit
 from pygit2 import GIT_OBJ_COMMIT, GIT_OBJ_TREE
 from pygit2 import GIT_OBJ_BLOB, GIT_OBJ_TAG
 from pygit2 import GIT_BRANCH_LOCAL
+from pygit2 import Settings
 
 
 def tree_walker(repo, oid, pid=None):
@@ -37,6 +38,7 @@ class GitRepo(object):
     def __init__(self, path):
         try:
             self.__repo = Repository(path)
+            # print('____', float(Settings().mwindow_size)/float(1024))
         except KeyError as e:
             self.__repo = None
             print(e)
@@ -68,6 +70,13 @@ class GitRepo(object):
         except ValueError as e:
             print(e)
         return ref
+
+    def get_all_branches(self, branch_type=None):
+        if not self.__repo:
+            return None
+        if branch_type:
+            return self.__repo.listall_braches(branch_type)
+        return self.__repo.listall_braches()
 
     def get_branch(self, name, branch_type=GIT_BRANCH_LOCAL):
         if self.__repo is None:
@@ -110,7 +119,7 @@ class GitRepo(object):
             commit = oid_or_commit
             if not isinstance(oid_or_commit, Commit):
                 commit = self.__repo.get(oid_or_commit)
-            if commit is not None and commit.type is GIT_OBJ_COMMIT:
+            if commit is not None and commit.type == GIT_OBJ_COMMIT:
                 result = {
                     'id': str(commit.id),
                     'author': commit.author.name,
@@ -185,31 +194,45 @@ class GitRepo(object):
                     result = self.get_blob(oid)
         return result is not None
 
-    def get_tree(self, oid):
-        if self.__repo is None:
+    def get_tree(self, oid, ppath=None):
+        if not self.__repo:
             return None
         try:
             tree = self.__repo.get(oid)
             if tree and tree.type == GIT_OBJ_TREE:
-                return {entry.name: str(entry.id) for entry in tree}
+                result = {}
+                for entry in tree:
+                    item = {
+                        'id': str(entry.id)
+                    }
+                    obj = self.__repo.get(entry.id)
+                    if obj.type == GIT_OBJ_BLOB:
+                        item['type'] = 'blob'
+                    elif obj.type == GIT_OBJ_TREE:
+                        item['type'] = 'tree'
+                    item['ppath'] = ppath
+                    result[entry.name] = item
+                return result
         except ValueError as e:
             print(e)
         return None
 
     def get_tree_by_commit(self, commit, path=None):
-        if commit is None:
+        if not commit:
             return None
         result = self.get_tree(commit['tree'])
-        if path is None or len(path) == 0:
+        if not path:
             return result
 
-        if not isinstance(path, list):
-            path = path.strip().split('/')
+        # if not isinstance(path, list):
+        #     path = path.strip().split('/')
 
         try:
             for name in path:
-                oid = result[name.strip()]
-                result = self.get_tree(oid)
+                oid = result[name]['id']
+                p = result[name]['ppath']
+                p = name if not p else p + '/' + name
+                result = self.get_tree(oid, p)
                 if not result:
                     break
         except KeyError as e:
@@ -217,20 +240,26 @@ class GitRepo(object):
             result = None
         return result
 
+    def get_current_root(self):
+        tree = self.get_current_commit()
+        if tree:
+            return self.get_tree(tree['tree'])
+        return None
+
     def get_whole_tree(self, oid):
         ''' tree w/ json '''
-        if self.__repo is None:
+        if not self.__repo:
             return None
         result = tree_walker(self.__repo, oid)
         return result
 
     def get_blob(self, oid):
         ''' blob w/ json '''
-        if self.__repo is None or oid is None:
+        if not self.__repo or not oid:
             return None
         try:
             blob = self.__repo.get(oid)
-            if blob is not None and blob.type == GIT_OBJ_BLOB:
+            if blob and blob.type == GIT_OBJ_BLOB:
                 content = blob.is_binary and None or blob.data.decode(
                     'utf8', 'ignore')
                 result = {
@@ -244,23 +273,14 @@ class GitRepo(object):
         return None
 
     def get_blob_by_commit(self, commit, path=None):
-        if commit is None or path is None or len(path) == 0:
-            return None
-        tree = self.get_tree(commit['tree'])
 
-        if not isinstance(path, list):
-            path = path.strip().split('/')
-        result = None
         try:
-            for name in path:
-                oid = tree[name.strip()]
-                tree = self.get_tree(oid)
-                if not tree:
-                    result = self.get_blob(oid)
-                    break
-        except KeyError as e:
-            print(e)
-        return result
+            tree = self.get_tree_by_commit(commit, path[:-1])
+            oid = tree[path[-1]]['id']
+            result = self.get_blob(oid)
+            return result
+        except KeyError:
+            return None
 
     def get_tag(self, oid):
         ''' blob w/ json '''

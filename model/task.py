@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 #
-# @name: model/repo.py
-# @date: Apr. 22th, 2014
+# @name: model/task.py
+# @date: June 10th, 2014
 # @author: hitigon@gmail.com
 from __future__ import print_function
 from pymongo import errors
@@ -9,20 +9,27 @@ from bson import ObjectId
 from model import db
 from lib import util
 
-repo = db.repo
+task = db.task
 
 
-def create(name, path, scm='git', tags=None):
+def create(
+    category, description, project, due_time, status=None,
+        priority=None, members=None, tags=None):
     spec = {
-        'name': name,
-        'path': path,
-        'scm': scm,
+        'category': category,
+        'description': description,
+        'project': project,
+        'status': 0,
+        'priority': 0,
+        'members': members,
         'tags': tags,
         'create_time': util.get_utc_timestamp(),
+        'update_time': None,
+        'due_time': due_time,
     }
     try:
-        repo_id = repo.insert(spec)
-        return repo_id
+        task_id = task.insert(spec)
+        return task_id
     except errors.OperationFailure as e:
         print(e)
     return False
@@ -33,9 +40,9 @@ def query(spec_or_id):
         return None
     try:
         if ObjectId.is_valid(spec_or_id):
-            result = repo.find_one(ObjectId(spec_or_id))
+            result = task.find_one(ObjectId(spec_or_id))
         else:
-            result = repo.find_one(spec_or_id)
+            result = task.find_one(spec_or_id)
         result['_id'] = str(result['_id'])
         return result
     except TypeError as e:
@@ -45,7 +52,7 @@ def query(spec_or_id):
 
 def query_all():
     try:
-        items = repo.find()
+        items = task.find()
         if items:
             result = {}
             for item in items:
@@ -57,16 +64,14 @@ def query_all():
     return None
 
 
-def update(name_or_id, document):
-    if name_or_id is None or document is None:
+def update(query_id, document):
+    if query_id is None or document is None:
         return False
     try:
-        if ObjectId.is_valid(name_or_id):
-            spec = {'_id': ObjectId(name_or_id)}
-        else:
-            spec = {'name': name_or_id}
-        repo.update(spec, document)
-        return True
+        if ObjectId.is_valid(query_id):
+            spec = {'_id': ObjectId(query_id)}
+            task.update(spec, document)
+            return True
     except errors.OperationFailure as e:
         print(e)
     except TypeError as e:
@@ -79,9 +84,9 @@ def delete(spec_or_id):
         return False
     try:
         if ObjectId.is_valid(spec_or_id):
-            repo.remove(ObjectId(spec_or_id))
+            task.remove(ObjectId(spec_or_id))
         else:
-            repo.remove(spec_or_id)
+            task.remove(spec_or_id)
         return True
     except errors.OperationFailure as e:
         print(e)
@@ -90,13 +95,8 @@ def delete(spec_or_id):
 
 def delete_all():
     try:
-        repo.remove()
+        task.remove()
         return True
     except errors.OperationFailure as e:
         print(e)
     return False
-
-
-def create_indexes():
-    name = repo.ensure_index('name', unique=True)
-    return name is not None
