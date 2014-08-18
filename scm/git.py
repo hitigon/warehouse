@@ -2,7 +2,7 @@
 #
 # @name: scm/git.py
 # @create: Apr. 21th, 2014
-# @update: Aug. 17th, 2014
+# @update: Aug. 18th, 2014
 # @author: hitigon@gmail.com
 from __future__ import unicode_literals
 from __future__ import print_function
@@ -138,6 +138,11 @@ class GitRepo(object):
             if not isinstance(oid_or_commit, Commit):
                 commit = self.__repo.get(oid_or_commit)
             if commit and commit.type == GIT_OBJ_COMMIT:
+                # t1 = self.__repo.revparse_single('HEAD^')
+                # t2 = self.__repo.revparse_single('HEAD^^')
+                # patches = self.__repo.diff(t1, t2)
+                # for p in patches:
+                #     print(p.new_file_path)
                 result = {
                     'id': str(commit.id),
                     'author': commit.author.name,
@@ -150,7 +155,7 @@ class GitRepo(object):
                     'time_offset': str(commit.commit_time_offset),
                 }
                 return result
-        except ValueError as e:
+        except Exception as e:
             print(e)
         return None
 
@@ -325,50 +330,43 @@ class GitRepo(object):
             print(e)
         return None
 
-    def get_patches(self, a, b=None):
-        if not self.__repo or not a:
-            return None
-
-        tree_a = self.__repo.get(a).tree
-
-        if not tree_a:
-            return None
-
-        if b:
-            tree_b = self.__repo.get(b).tree
-        else:
-            tree_b = self.__repo.get(a).parents[0].tree
-
-        diff = self.__repo.diff(tree_a, tree_b)
-        result = {}
-        idx = 0
-        for patch in diff:
-            i = 0
-            p = {
-                'old_file_path': patch.old_file_path,
-                'new_file_path': patch.new_file_path,
-                'old_oid': str(patch.old_oid),
-                'new_oid': str(patch.new_oid),
-                'status': patch.status,
-                'similarity': patch.similarity,
-                'additions': patch.additions,
-                'deletions': patch.deletions,
-                'binary': patch.is_binary,
-                'hunks': {},
-            }
-            for hunk in patch.hunks:
-                h = {
-                    'old_start': hunk.old_start,
-                    'old_lines': hunk.old_lines,
-                    'new_start': hunk.new_start,
-                    'new_lines': hunk.new_lines,
-                    'lines': hunk.lines,
+    def get_patches(self, a=None, b=None):
+        try:
+            if not a:
+                a = 'HEAD'
+            if not b:
+                b = a + '^'
+            t1 = self.__repo.revparse_single(a)
+            t2 = self.__repo.revparse_single(b)
+            patches = self.__repo.diff(t1, t2)
+            result = []
+            for patch in patches:
+                p = {
+                    'old_file_path': patch.old_file_path,
+                    'new_file_path': patch.new_file_path,
+                    'old_oid': str(patch.old_oid),
+                    'new_oid': str(patch.new_oid),
+                    'status': patch.status,
+                    'similarity': patch.similarity,
+                    'additions': patch.additions,
+                    'deletions': patch.deletions,
+                    'binary': patch.is_binary,
+                    'hunks': [],
                 }
-                p['hunks'][i] = h
-                i += 1
-            result[idx] = p
-            idx += 1
-        return result
+                for hunk in patch.hunks:
+                    h = {
+                        'old_start': hunk.old_start,
+                        'old_lines': hunk.old_lines,
+                        'new_start': hunk.new_start,
+                        'new_lines': hunk.new_lines,
+                        'lines': hunk.lines,
+                    }
+                    p['hunks'].append(h)
+                result.append(p)
+            return result
+        except Exception as e:
+            print(e)
+        return None
 
 if __name__ == '__main__':
     pass

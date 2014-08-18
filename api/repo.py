@@ -2,9 +2,10 @@
 #
 # @name: api/repo.py
 # @create: Apr. 22th, 2014
-# @update: Aug. 17th, 2014
+# @update: Aug. 18th, 2014
 # @author: hitigon@gmail.com
 from __future__ import print_function
+# import re
 import json
 from scm.git import GitRepo
 from libs.utils import parse_listed_strs, parse_path
@@ -152,7 +153,9 @@ def get_repo_contents(scm_repo, fields):
             else:
                 response = scm_repo.get_blob_by_commit(commit, fields)
     elif obj_type == 'commit' and len(fields) >= 2:
+        patches = scm_repo.get_patches(fields[1])
         response = scm_repo.get_commit(fields[1])
+        response['patches'] = patches
     elif obj_type == 'patch' and len(fields) == 2:
         response = scm_repo.get_patches(fields[1])
     return obj_type, current_query, response
@@ -162,6 +165,8 @@ def get_repo_branches_tags(scm_repo):
     refs = scm_repo.get_all_references()
     branches = []
     tags = []
+    # regex = re.compile('^refs/tags/')
+    # print(map(lambda s: s[10:], filter(lambda r: regex.match(r), refs)))
     try:
         for ref in refs:
             if 'refs/heads/' in ref:
