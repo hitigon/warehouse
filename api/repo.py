@@ -5,7 +5,7 @@
 # @update: Aug. 18th, 2014
 # @author: hitigon@gmail.com
 from __future__ import print_function
-# import re
+import re
 import json
 from scm.git import GitRepo
 from libs.utils import parse_listed_strs, parse_path
@@ -39,10 +39,12 @@ class RepoHandler(BaseHandler):
             repo_contents = None
             repo_branches = None
             repo_tags = None
+            repo_info = None
             if len(args) > 0:
                 path = parse_path(args[0])
                 repo = Repo.objects(owner=user, name=path[0]).first()
                 scm_repo = GitRepo(repo.path)
+                repo_info = scm_repo.get_info()
                 repo_branches, repo_tags = get_repo_branches_tags(scm_repo)
                 repo_type, repo_query, repo_contents = get_repo_contents(
                     scm_repo, path[1:])
@@ -50,6 +52,7 @@ class RepoHandler(BaseHandler):
                 repo = Repo.objects(owner=user).all()
             repo_data = json.loads(repo.to_json())
             if repo_type and repo_contents:
+                repo_data['repo_info'] = repo_info
                 repo_data['repo_type'] = repo_type
                 repo_data['repo_branches'] = repo_branches
                 repo_data['repo_tags'] = repo_tags
@@ -131,9 +134,7 @@ def get_repo_contents(scm_repo, fields):
         return 'tree', 'master', scm_repo.get_current_root()
     response = None
     current_query = None
-    if obj_type == 'info':
-        response = scm_repo.get_info()
-    elif obj_type == 'tree' or obj_type == 'blob':
+    if obj_type == 'tree' or obj_type == 'blob':
         if len(fields) >= 2:
             query = fields[1]
             # no remote branch is allowed
@@ -156,23 +157,18 @@ def get_repo_contents(scm_repo, fields):
         patches = scm_repo.get_patches(fields[1])
         response = scm_repo.get_commit(fields[1])
         response['patches'] = patches
-    elif obj_type == 'patch' and len(fields) == 2:
-        response = scm_repo.get_patches(fields[1])
     return obj_type, current_query, response
 
 
 def get_repo_branches_tags(scm_repo):
-    refs = scm_repo.get_all_references()
     branches = []
     tags = []
-    # regex = re.compile('^refs/tags/')
-    # print(map(lambda s: s[10:], filter(lambda r: regex.match(r), refs)))
     try:
-        for ref in refs:
-            if 'refs/heads/' in ref:
-                branches.append(ref[11:])
-            elif 'refs/tags/' in ref:
-                tags.append(ref[10:])
+        refs = scm_repo.get_all_references()
+        br = re.compile('^refs/heads/')
+        tr = re.compile('^refs/tags/')
+        branches = map(lambda s: s[11:], filter(lambda r: br.match(r), refs))
+        tags = map(lambda s: s[10:], filter(lambda r: tr.match(r), refs))
     except Exception as e:
         print(e)
     return branches, tags
