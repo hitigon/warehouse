@@ -2,7 +2,7 @@
 #
 # @name: api/repo.py
 # @create: Apr. 22th, 2014
-# @update: Aug. 18th, 2014
+# @update: Aug. 20th, 2014
 # @author: hitigon@gmail.com
 from __future__ import print_function
 import re
@@ -32,37 +32,44 @@ class RepoHandler(BaseHandler):
         # team = self.get_argument('team_name', None)
         # project = self.get_argument('project_name', None)
         response = {}
-        try:
-            user = kwargs['user']
-            repo_type = None
-            repo_query = None
-            repo_contents = None
-            repo_branches = None
-            repo_tags = None
-            repo_info = None
-            if len(args) > 0:
-                path = parse_path(args[0])
-                repo = Repo.objects(owner=user, name=path[0]).first()
-                scm_repo = GitRepo(repo.path)
-                repo_info = scm_repo.get_info()
-                repo_branches, repo_tags = get_repo_branches_tags(scm_repo)
-                repo_type, repo_query, repo_contents = get_repo_contents(
-                    scm_repo, path[1:])
-            else:
-                repo = Repo.objects(owner=user).all()
-            repo_data = json.loads(repo.to_json())
-            if repo_type and repo_contents:
-                repo_data['repo_info'] = repo_info
-                repo_data['repo_type'] = repo_type
-                repo_data['repo_branches'] = repo_branches
-                repo_data['repo_tags'] = repo_tags
-                repo_data['repo_contents'] = repo_contents
-                repo_data['repo_query'] = repo_query
-            msg = 'Repo found'
-            response = self.get_response(
-                data=repo_data, success=QuerySuccess(msg))
-        except Exception as e:
-            response = self.get_response(error=e)
+        # try:
+        if 'user' not in kwargs:
+            self.raise403()
+        user = kwargs['user']
+        repo_type = None
+        repo_query = None
+        repo_contents = None
+        repo_branches = None
+        repo_tags = None
+        repo_info = None
+        if args:
+            path = parse_path(args[0])
+            if not path:
+                self.raise404()
+            repo = Repo.objects(owner=user, name=path[0]).first()
+            scm_repo = GitRepo(repo.path)
+            repo_info = scm_repo.get_info()
+            repo_branches, repo_tags = get_repo_branches_tags(scm_repo)
+            repo_type, repo_query, repo_contents = get_repo_contents(
+                scm_repo, path[1:])
+            print(repo_contents)
+            if not repo_contents:
+                self.raise404()
+        else:
+            repo = Repo.objects(owner=user).all()
+        repo_data = json.loads(repo.to_json())
+        if repo_type and repo_contents:
+            repo_data['repo_info'] = repo_info
+            repo_data['repo_type'] = repo_type
+            repo_data['repo_branches'] = repo_branches
+            repo_data['repo_tags'] = repo_tags
+            repo_data['repo_contents'] = repo_contents
+            repo_data['repo_query'] = repo_query
+        msg = 'Repo found'
+        response = self.get_response(
+            data=repo_data, success=QuerySuccess(msg))
+        # except Exception as e:
+        #     response = self.get_response(error=e)
         print(response)
         self.write(response)
 
@@ -147,12 +154,13 @@ def get_repo_contents(scm_repo, fields):
             else:
                 # query is a commit id
                 commit = scm_repo.get_commit(query)
-            current_query = query
-            fields = fields[2:]
-            if obj_type == 'tree':
-                response = scm_repo.get_tree_by_commit(commit, fields)
-            else:
-                response = scm_repo.get_blob_by_commit(commit, fields)
+            if commit:
+                current_query = query
+                fields = fields[2:]
+                if obj_type == 'tree':
+                    response = scm_repo.get_tree_by_commit(commit, fields)
+                else:
+                    response = scm_repo.get_blob_by_commit(commit, fields)
     elif obj_type == 'commit' and len(fields) >= 2:
         patches = scm_repo.get_patches(fields[1])
         response = scm_repo.get_commit(fields[1])

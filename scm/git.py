@@ -2,7 +2,7 @@
 #
 # @name: scm/git.py
 # @create: Apr. 21th, 2014
-# @update: Aug. 18th, 2014
+# @update: Aug. 20th, 2014
 # @author: hitigon@gmail.com
 from __future__ import unicode_literals
 from __future__ import print_function
@@ -26,7 +26,7 @@ def tree_walker(repo, oid, pid=None):
                 child = repo.get(entry.id)
                 if child.type == GIT_OBJ_TREE:
                     result += tree_walker(child.id, entry.id)
-    except ValueError as e:
+    except Exception as e:
         print(e)
     return result
 
@@ -38,7 +38,7 @@ class GitRepo(object):
     def __init__(self, path):
         try:
             self.__repo = Repository(path)
-        except KeyError as e:
+        except Exception as e:
             self.__repo = None
             print(e)
 
@@ -67,9 +67,7 @@ class GitRepo(object):
         ref = None
         try:
             ref = self.__repo.lookup_reference(name)
-        except KeyError as e:
-            print(e)
-        except ValueError as e:
+        except Exception as e:
             print(e)
         return ref
 
@@ -95,7 +93,8 @@ class GitRepo(object):
         try:
             result = self.get_branch(name, branch_type)
             return result
-        except Exception:
+        except Exception as e:
+            print(e)
             return False
 
     def get_current_commit(self):
@@ -242,7 +241,7 @@ class GitRepo(object):
                     item['ppath'] = ppath
                     result[entry.name] = item
                 return result
-        except ValueError as e:
+        except Exception as e:
             print(e)
         return None
 
@@ -264,7 +263,7 @@ class GitRepo(object):
                 result = self.get_tree(oid, p)
                 if not result:
                     break
-        except KeyError as e:
+        except Exception as e:
             print(e)
             result = None
         return result
@@ -297,7 +296,7 @@ class GitRepo(object):
                     'size': blob.size,
                 }
                 return result
-        except ValueError as e:
+        except Exception as e:
             print(e)
         return None
 
@@ -308,7 +307,8 @@ class GitRepo(object):
             oid = tree[path[-1]]['id']
             result = self.get_blob(oid)
             return result
-        except KeyError:
+        except Exception as e:
+            print(e)
             return None
 
     def get_tag(self, oid):
@@ -326,7 +326,7 @@ class GitRepo(object):
                     'message': tag.message,
                 }
                 return result
-        except ValueError as e:
+        except Exception as e:
             print(e)
         return None
 
