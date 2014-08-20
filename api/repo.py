@@ -2,7 +2,7 @@
 #
 # @name: api/repo.py
 # @create: Apr. 22th, 2014
-# @update: Aug. 19th, 2014
+# @update: Aug. 20th, 2014
 # @author: hitigon@gmail.com
 from __future__ import print_function
 import re
@@ -44,7 +44,6 @@ class RepoHandler(BaseHandler):
             if not path:
                 self.raise404()
             repo = Repo.objects(owner=user, name=path[0]).first()
-            print(repo)
             if repo:
                 scm_repo = GitRepo(repo.path)
                 repo_info = scm_repo.get_info()

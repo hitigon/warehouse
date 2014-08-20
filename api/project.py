@@ -2,53 +2,39 @@
 #
 # @name: api/project.py
 # @create: Apr. 25th, 2014
-# @update: Aug. 19th, 2014
+# @update: Aug. 20th, 2014
 # @author: hitigon@gmail.com
 from __future__ import print_function
 import json
-from mongoengine.errors import DoesNotExist
+from oauth.protector import authenticated
 from . import BaseHandler
-from . import QuerySuccess
-from libs.utils import parse_listed_strs
+from libs.utils import parse_listed_strs, parse_path
 from models.project import Project
 from models.user import User
 from models.team import Team
 from models.repo import Repo
-from oauth.protector import authenticated
 
 
 class ProjectHandler(BaseHandler):
 
     @authenticated(scopes=['projects'])
-    def get(self, *args, **kwags):
-        response = {}
-        projects = None
+    def get(self, *args, **kwargs):
+        if 'user' not in kwargs:
+            self.raise401()
 
+        user = kwargs['user']
         if args:
-            n = len(args)
-            if n == 1:
-                projects = Project.objects(name=args[0]).all()
-            elif n == 2:
-                if args[0] == 'user':
-                    user = User.objects(username=args[1]).first()
-                    projects = Project.objects(members__in=[user]).all()
-                elif args[0] == 'team':
-                    team = Team.objects(name=args[1]).first()
-                    projects = Project.objects(teams__in=[team]).all()
-            else:
-                self.raise404()
+            path = parse_path(args[0])
+            project = Project.objects(name=path[0]).first()
+            if project and user not in project.members:
+                self.raise401()
         else:
-            projects = Project.objects.all()
-
-        if projects:
-            msg = 'Found projects'
-            projects = json.loads(projects.to_json())
-            response = self.get_response(
-                data=projects, success=QuerySuccess(msg))
+            project = Project.objects(members__in=[user]).all()
+        if project:
+            project_data = json.loads(project.to_json())
+            self.write(json.dumps(project_data))
         else:
-            msg = 'Project does not exists'
-            response = self.get_response(error=DoesNotExist(msg))
-        self.write(response)
+            self.raise404()
 
     @authenticated(scopes=['projects'])
     def post(self, *args, **kwargs):
@@ -64,28 +50,42 @@ class ProjectHandler(BaseHandler):
             self.raise401()
 
         try:
-            project_leader = kwargs['user']
-            if leader:
-                project_leader = User.objects(username=leader).first()
+            url = url.strip()
+            url = url if url else None
             members_list = []
             repos_list = []
             teams_list = []
+            project_leader = kwargs['user']
+            if leader:
+                project_leader = User.objects(username=leader).first()
+
+            if repos:
+                for repo in parse_listed_strs(repos):
+                    r = Repo.objects(name=repo).first()
+                    if not r:
+                        continue
+                    repos_list.append(r)
+            if members:
+                for member in parse_listed_strs(members):
+                    u = User.objects(username=member).first()
+                    if not u or u == project_leader:
+                        continue
+                    members_list.append(u)
+            if teams:
+                for team in parse_listed_strs(teams):
+                    t = Team.objects(name=team).first()
+                    if not t:
+                        continue
+                    teams_list.append(t)
+            members_list.append(project_leader)
             tags_list = parse_listed_strs(tags)
-            for repo in parse_listed_strs(repos):
-                r = Repo.objects(name=repo).first()
-                repos_list.append(r)
-            for member in parse_listed_strs(members):
-                u = User.objects(username=member).first()
-                members_list.append(u)
-            for team in parse_listed_strs(teams):
-                t = Team.objects(name=team).first()
-                teams_list.append(t)
             project = Project(
                 name=name, description=description,
                 url=url, repos=repos_list,
                 leader=project_leader, members=members_list,
                 teams=teams_list, tags=tags_list)
             project.save()
+            print(project)
             project_data = json.loads(project.to_json())
             self.set_status(201)
             self.write(project_data)
