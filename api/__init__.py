@@ -2,7 +2,7 @@
 #
 # @name: api/__init__.py
 # @create: Apr. 22th, 2014
-# @update: Aug. 14th, 2014
+# @update: Aug. 19th, 2014
 # @author: hitigon@gmail.com
 import tornado.web
 from mongoengine.connection import get_db
@@ -144,11 +144,26 @@ class BaseHandler(tornado.web.RequestHandler):
             response['messages'] = msgs or success.message
         return response
 
+    def write_error(self, status_code, **kwargs):
+        self.set_status(status_code, self._reason)
+        result = {
+            'message': self._reason,
+            'status': status_code,
+        }
+        self.write(result)
+
+    def raise400(self, reason=None, log_message=None):
+        self.abort(400, reason, log_message)
+
     def raise401(self, reason=None, log_message=None):
-        raise tornado.web.HTTPError(401, reason, log_message)
+        self.abort(401, reason, log_message)
 
     def raise403(self, reason=None, log_message=None):
-        raise tornado.web.HTTPError(403, reason, log_message)
+        self.abort(403, reason, log_message)
 
     def raise404(self, reason=None, log_message=None):
-        raise tornado.web.HTTPError(404, reason, log_message)
+        self.abort(404, reason, log_message)
+
+    def abort(self, status, reason=None, log_message=None):
+        raise tornado.web.HTTPError(
+            status, reason=reason, log_message=log_message)

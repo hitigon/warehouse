@@ -2,7 +2,7 @@
 #
 # @name: api/repo.py
 # @create: Apr. 22th, 2014
-# @update: Aug. 20th, 2014
+# @update: Aug. 19th, 2014
 # @author: hitigon@gmail.com
 from __future__ import print_function
 import re
@@ -12,7 +12,6 @@ from libs.utils import parse_listed_strs, parse_path
 from models.repo import Repo
 from oauth.protector import authenticated
 from . import BaseHandler
-from . import CreateSuccess, QuerySuccess
 
 
 class RepoHandler(BaseHandler):
@@ -31,10 +30,8 @@ class RepoHandler(BaseHandler):
         # username = self.get_argument('username', None)
         # team = self.get_argument('team_name', None)
         # project = self.get_argument('project_name', None)
-        response = {}
-        # try:
         if 'user' not in kwargs:
-            self.raise403()
+            self.raise401()
         user = kwargs['user']
         repo_type = None
         repo_query = None
@@ -47,12 +44,13 @@ class RepoHandler(BaseHandler):
             if not path:
                 self.raise404()
             repo = Repo.objects(owner=user, name=path[0]).first()
-            scm_repo = GitRepo(repo.path)
-            repo_info = scm_repo.get_info()
-            repo_branches, repo_tags = get_repo_branches_tags(scm_repo)
-            repo_type, repo_query, repo_contents = get_repo_contents(
-                scm_repo, path[1:])
-            print(repo_contents)
+            print(repo)
+            if repo:
+                scm_repo = GitRepo(repo.path)
+                repo_info = scm_repo.get_info()
+                repo_branches, repo_tags = get_repo_branches_tags(scm_repo)
+                repo_type, repo_query, repo_contents = get_repo_contents(
+                    scm_repo, path[1:])
             if not repo_contents:
                 self.raise404()
         else:
@@ -61,17 +59,11 @@ class RepoHandler(BaseHandler):
         if repo_type and repo_contents:
             repo_data['repo_info'] = repo_info
             repo_data['repo_type'] = repo_type
+            repo_data['repo_query'] = repo_query
             repo_data['repo_branches'] = repo_branches
             repo_data['repo_tags'] = repo_tags
             repo_data['repo_contents'] = repo_contents
-            repo_data['repo_query'] = repo_query
-        msg = 'Repo found'
-        response = self.get_response(
-            data=repo_data, success=QuerySuccess(msg))
-        # except Exception as e:
-        #     response = self.get_response(error=e)
-        print(response)
-        self.write(response)
+        self.write(json.dumps(repo_data))
 
     @authenticated(scopes=['repos'])
     def post(self, *args, **kwargs):
@@ -81,57 +73,75 @@ class RepoHandler(BaseHandler):
         scm = self.get_argument('scm', None)
         team = self.get_argument('team', None)  # just for test
         tags = self.get_argument('tags', None)
-        response = {}
+        if 'user' not in kwargs:
+            self.raise401()
+        user = kwargs['user']
+        tags_list = parse_listed_strs(tags)
         try:
-            user = kwargs['user']
-            tags_list = parse_listed_strs(tags)
+            name = name.strip()
+            name = name if name else None
             repo = Repo(name=name, description=description,
                         path=path, scm=scm, owner=user,
                         team=team, tags=tags_list)
             repo.save()
             repo_data = json.loads(repo.to_json())
-            msg = 'Repo added'
-            response = self.get_response(
-                data=repo_data, success=CreateSuccess(msg))
+            self.set_status(201)
+            self.write(repo_data)
         except Exception as e:
-            response = self.get_response(error=e)
-        self.write(response)
+            reason = e.message
+            self.raise400(reason=reason)
 
+    @authenticated(scopes=['repos'])
     def put(self,  *args, **kwargs):
-        # name = self.get_argument('name', None)
-        # path = self.get_argument('path', None)
-        # scm = self.get_argument('scm', None)
-        # tags = self.get_argument('tags', None)
+        if 'user' not in kwargs or not args:
+            self.raise401()
+        name = self.get_argument('name', None)
+        description = self.get_argument('description', None)
+        path = self.get_argument('path', None)
+        scm = self.get_argument('scm', None)
+        team = self.get_argument('team', None)
+        tags = self.get_argument('tags', None)
+        user = kwargs['user']
+        tags_list = parse_listed_strs(tags)
+        update = {}
+        if name:
+            update['set__name'] = name
+        if description:
+            update['set__description'] = description
+        if path:
+            update['set__path'] = path
+        if scm:
+            update['set__scm'] = scm
+        if team:
+            update['set__team'] = team
+        if tags:
+            update['set__tags'] = tags_list
+        try:
+            path = parse_path(args[0])
+            Repo.objects(owner=user, name=path[0]).update_one(**update)
+            repo = Repo.objects(owner=user, name=name or path[0]).first()
+            repo_data = json.loads(repo.to_json())
+            self.set_status(201)
+            self.write(repo_data)
+        except Exception as e:
+            reason = e.message
+            self.raise400(reason=reason)
 
-        # update = {}
-        # if name:
-        #     update['name'] = name
-        # if path:
-        #     update['path'] = path
-        # if scm:
-        #     update['scm'] = scm
-        # if tags:
-        #     update['tags'] = [str(tag).strip() for tag in tags.split(',')]
-        # document = {'$set': update}
-        # if repo.update(query_id, document):
-        #     data = repo.query(query_id)
-        #     response = get_respmsg(1001, data)
-        # else:
-        #     response = get_respmsg(-1001)
-        response = {}
-        self.write(response)
-
+    @authenticated(scopes=['repos'])
     def delete(self, *args, **kwargs):
-        # if ObjectId.is_valid(query_id):
-        #     spec = query_id
-        # else:
-        #     spec = {'name': query_id}
-        # if repo.delete(spec):
-        #     response = get_respmsg(1002)
-        # else:
-        #     response = get_respmsg(-1002)
-        response = {}
-        self.write(response)
+        if 'user' not in kwargs or not args:
+            self.raise401()
+        try:
+            user = kwargs['user']
+            path = parse_path(args[0])
+            repo = Repo.objects(owner=user, name=path[0])
+            if repo:
+                repo.delete()
+            self.set_status(204)
+            self.finish()
+        except Exception as e:
+            reason = e.message
+            self.raise400(reason=reason)
 
 
 def get_repo_contents(scm_repo, fields):

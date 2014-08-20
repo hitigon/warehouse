@@ -18,7 +18,8 @@ class Repo(Document):
     name = StringField(required=True, unique=True)
     description = StringField()
     path = StringField()
-    scm = IntField(default=0)
+    scm = StringField(
+        default='Git', choices=['Git', 'Mercurial', 'SVN', 'CVS'])
     status = IntField(default=0)
     owner = ReferenceField(User)
     team = ReferenceField(Team)

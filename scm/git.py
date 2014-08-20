@@ -2,7 +2,7 @@
 #
 # @name: scm/git.py
 # @create: Apr. 21th, 2014
-# @update: Aug. 20th, 2014
+# @update: Aug. 19th, 2014
 # @author: hitigon@gmail.com
 from __future__ import unicode_literals
 from __future__ import print_function
