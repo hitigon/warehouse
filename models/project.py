@@ -2,7 +2,7 @@
 #
 # @name: models/project.py
 # @create: Aug. 8th, 2014
-# @update: Aug. 8th, 2014
+# @update: Aug. 19th, 2014
 # @author: hitigon@gmail.com
 from __future__ import print_function
 from datetime import datetime
@@ -22,7 +22,7 @@ class Project(Document):
     url = URLField()
     status = IntField(default=0)
     repos = ListField(ReferenceField(Repo))
-    leader = ReferenceField(User)
+    leader = ReferenceField(document_type=User, required=True)
     members = ListField(ReferenceField(User))
     teams = ListField(ReferenceField(Team))
     create_time = DateTimeField(default=datetime.utcnow())

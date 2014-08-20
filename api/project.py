@@ -2,21 +2,25 @@
 #
 # @name: api/project.py
 # @create: Apr. 25th, 2014
-# @update: Aug. 14th, 2014
+# @update: Aug. 19th, 2014
 # @author: hitigon@gmail.com
 from __future__ import print_function
 import json
 from mongoengine.errors import DoesNotExist
 from . import BaseHandler
 from . import QuerySuccess
+from libs.utils import parse_listed_strs
 from models.project import Project
 from models.user import User
 from models.team import Team
+from models.repo import Repo
+from oauth.protector import authenticated
 
 
 class ProjectHandler(BaseHandler):
 
-    def get(self, *args):
+    @authenticated(scopes=['projects'])
+    def get(self, *args, **kwags):
         response = {}
         projects = None
 
@@ -46,48 +50,50 @@ class ProjectHandler(BaseHandler):
             response = self.get_response(error=DoesNotExist(msg))
         self.write(response)
 
-    def post(self, *args):
-        '''
+    @authenticated(scopes=['projects'])
+    def post(self, *args, **kwargs):
         name = self.get_argument('name', None)
         description = self.get_argument('description', None)
+        url = self.get_argument('url', None)
         leader = self.get_argument('leader', None)
         members = self.get_argument('members', None)
+        teams = self.get_argument('teams', None)
         repos = self.get_argument('repos', None)
         tags = self.get_argument('tags', None)
-        if not name:
-            response = get_respmsg(-1004)
-        else:
+        if 'user' not in kwargs:
+            self.raise401()
 
-            if repos:
-                valid_repos = []
-                tmp = repos.split(',')
-                for t in tmp:
-                    t = t.strip()
-                    if repo.query(t):
-                        valid_repos.append(ObjectId(t))
-                if len(valid_repos) > 0:
-                    repos = valid_repos
-            if members:
-                valid_members = []
-                tmp = repos.split(',')
-                for t in tmp:
-                    t = t.strip()
-                    if user.query(t):
-                        valid_repos.append(ObjectId(t))
-                if len(valid_members) > 0:
-                    members = valid_members
-            result = project.create(
-                name, description, leader, members, repos, tags)
-            if result:
-                data = project.query(result)
-                response = get_respmsg(1000, data)
-            else:
-                response = get_respmsg(-1000)
-        '''
-        response = {}
-        self.write(response)
+        try:
+            project_leader = kwargs['user']
+            if leader:
+                project_leader = User.objects(username=leader).first()
+            members_list = []
+            repos_list = []
+            teams_list = []
+            tags_list = parse_listed_strs(tags)
+            for repo in parse_listed_strs(repos):
+                r = Repo.objects(name=repo).first()
+                repos_list.append(r)
+            for member in parse_listed_strs(members):
+                u = User.objects(username=member).first()
+                members_list.append(u)
+            for team in parse_listed_strs(teams):
+                t = Team.objects(name=team).first()
+                teams_list.append(t)
+            project = Project(
+                name=name, description=description,
+                url=url, repos=repos_list,
+                leader=project_leader, members=members_list,
+                teams=teams_list, tags=tags_list)
+            project.save()
+            project_data = json.loads(project.to_json())
+            self.set_status(201)
+            self.write(project_data)
+        except Exception as e:
+            reason = e.message
+            self.raise400(reason=reason)
 
-    def put(self, *args):
+    def put(self, *args, **kwargs):
         '''
 
         name = self.get_argument('name', None)
@@ -120,7 +126,7 @@ class ProjectHandler(BaseHandler):
         response = {}
         self.write(response)
 
-    def delete(self, *args):
+    def delete(self, *args, **kwargs):
         response = {}
         '''
         if ObjectId.is_valid(query_id):
