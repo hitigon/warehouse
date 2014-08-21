@@ -100,6 +100,10 @@ class ProjectHandler(BaseHandler):
 
     @authenticated(scopes=['projects'])
     def put(self, *args, **kwargs):
+        # the creator of the project might be neither
+        # the leader nor the member
+        # it causes a problem that the creator cannot
+        # access, modify and delete the project
         if 'user' not in kwargs or not args:
             self.raise401()
         name = self.get_argument('name', None)
@@ -166,5 +170,18 @@ class ProjectHandler(BaseHandler):
 
     @authenticated(scopes=['projects'])
     def delete(self, *args, **kwargs):
-        response = {}
-        self.write(response)
+        if 'user' not in kwargs or not args:
+            self.raise401()
+
+        user = kwargs['user']
+        path = parse_path(args[0])
+        project = Project.objects(name=path[0], members__in=[user])
+        if not project:
+            self.raise401()
+        try:
+            project.delete()
+            self.set_status(204)
+            self.finish()
+        except Exception as e:
+            reason = e.message
+            self.raise400(reason=reason)
