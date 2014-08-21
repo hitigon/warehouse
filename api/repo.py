@@ -2,16 +2,16 @@
 #
 # @name: api/repo.py
 # @create: Apr. 22th, 2014
-# @update: Aug. 20th, 2014
+# @update: Aug. 21th, 2014
 # @author: hitigon@gmail.com
 from __future__ import print_function
 import re
-from scm.git import GitRepo
-from libs.utils import parse_listed_strs, parse_path
-from libs.utils import convert_query, convert_document
-from models.repo import Repo
+from utils import parse_listed_strs, parse_path
+from utils import convert_query, convert_document
+from base import BaseHandler
 from oauth.protector import authenticated
-from . import BaseHandler
+from scm.git import GitRepo
+from models.repo import Repo
 
 
 class RepoHandler(BaseHandler):

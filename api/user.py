@@ -5,9 +5,9 @@
 # @update: Aug. 21th, 2014
 # @author: hitigon@gmail.com
 from __future__ import print_function
-from . import BaseHandler
-from libs.utils import parse_path, create_password
-from libs.utils import document_only_filter
+from utils import parse_path, create_password
+from utils import document_only_filter
+from base import BaseHandler
 from models.user import User
 from oauth.protector import authenticated
 

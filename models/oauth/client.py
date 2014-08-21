@@ -2,13 +2,13 @@
 #
 # @name: models/oauth/client.py
 # @create: Aug. 9th, 2014
-# @update: Aug. 9th, 2014
+# @update: Aug. 21th, 2014
 # @author: hitigon@gmail.com
 from __future__ import print_function
 from mongoengine import Document
 from mongoengine import StringField, ListField, DateTimeField
 from mongoengine import ReferenceField, URLField
-from libs.utils import get_utc_time
+from utils import get_utc_time
 
 __all__ = ('Client',)
 

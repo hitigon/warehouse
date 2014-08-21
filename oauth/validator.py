@@ -2,12 +2,12 @@
 #
 # @name: oauth/validator.py
 # @create: Aug. 9th, 2014
-# @update: Aug. 14th, 2014
+# @update: Aug. 21th, 2014
 # @author: hitigon@gmail.com
 from __future__ import print_function
 import bcrypt
+from utils import get_auth_base_uri, get_utc_time
 from oauthlib.oauth2 import RequestValidator
-from libs.utils import get_auth_base_uri, get_utc_time
 from models.oauth.client import Client
 from models.oauth.code import Code
 from models.oauth.token import Token
