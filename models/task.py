@@ -14,12 +14,12 @@ __all__ = ('Task',)
 
 
 class Task(Document):
-    description = StringField(required=True)
-    category = StringField(required=True)
     from user import User
     from project import Project
     from comment import TaskComment
-    project = ReferenceField(Project)
+    description = StringField(required=True)
+    category = StringField(required=True)
+    project = ReferenceField(Project, required=True)
     status = StringField(default='new', choices=[
                          'new', 'in progress', 'testing',
                          'complete', 'closed'])

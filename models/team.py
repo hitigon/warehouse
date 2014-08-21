@@ -1,7 +1,8 @@
 #!/usr/bin/env python
 #
 # @name: models/team.py
-# @date: Aug. 8th, 2014
+# @create: Aug. 8th, 2014
+# @update: Aug. 21th, 2014
 # @author: hitigon@gmail.com
 from __future__ import print_function
 from datetime import datetime
