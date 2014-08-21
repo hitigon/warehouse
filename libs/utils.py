@@ -2,9 +2,10 @@
 #
 # @name: libs/utils.py
 # @create: Apr. 27th, 2014
-# @update: Aug. 11th, 2014
+# @update: Aug. 20th, 2014
 # @author: hitigon@gmail.com
 import time
+import json
 import re
 import calendar
 import base64
@@ -13,9 +14,11 @@ import hashlib
 import random
 import config
 import pickle
+from bson.objectid import ObjectId
 from datetime import datetime, timedelta
 from bson.binary import Binary
 from oauthlib.common import Request
+from mongoengine import Document, QuerySet
 
 
 def get_utc_time(seconds=0):
@@ -24,6 +27,10 @@ def get_utc_time(seconds=0):
 
 def get_utc_timestamp():
     return calendar.timegm(time.gmtime())
+
+
+def datetime_to_timestamp(dt):
+    return time.mktime(dt.timetuple())
 
 
 def create_cookie_secret():
@@ -95,3 +102,37 @@ def parse_listed_strs(strs, delim=None):
 
 def parse_path(s):
     return parse_listed_strs(s, '/')
+
+
+def convert_document(obj):
+    if isinstance(obj, Document):
+        result = {}
+        for field in obj:
+            item = obj[field]
+            result[field] = convert_document(item)
+        return result
+    elif isinstance(obj, list):
+        result = []
+        for item in obj:
+            result.append(convert_document(item))
+        return result
+    elif isinstance(obj, dict):
+        result = {}
+        for k, v in obj.items():
+            result[k] = convert_document(v)
+        return result
+    elif isinstance(obj, ObjectId):
+        return str(obj)
+    elif isinstance(obj, datetime):
+        return datetime_to_timestamp(obj)
+    else:
+        return obj
+
+
+def convert_query(query_set):
+    if not query_set or not isinstance(query_set, QuerySet):
+        return []
+    result = []
+    for document in query_set:
+        result.append(convert_document(document))
+    return json.dumps(result)

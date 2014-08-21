@@ -18,11 +18,8 @@ class RepoHandler(BaseHandler):
 
     @authenticated(scopes=['repos'])
     def get(self, *args, **kwargs):
-        # an authenticated user can read her/his own repos, team's repos
-        # plus any repos in his/her projects
-        # what about team members, and project members' repos? TBD
         # /repos
-        # /repos/:id/../../.../
+        # /repos/:path
         # /repos?username=
         # /repos?team=
         # /repos?project=
@@ -101,7 +98,6 @@ class RepoHandler(BaseHandler):
         team = self.get_argument('team', None)
         tags = self.get_argument('tags', None)
         user = kwargs['user']
-        tags_list = parse_listed_strs(tags)
         update = {}
         if name:
             update['set__name'] = name
@@ -114,6 +110,7 @@ class RepoHandler(BaseHandler):
         if team:
             update['set__team'] = team
         if tags:
+            tags_list = parse_listed_strs(tags)
             update['set__tags'] = tags_list
         try:
             path = parse_path(args[0])

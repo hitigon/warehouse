@@ -5,10 +5,10 @@
 # @update: Aug. 20th, 2014
 # @author: hitigon@gmail.com
 from __future__ import print_function
-import json
 from oauth.protector import authenticated
 from . import BaseHandler
 from libs.utils import parse_listed_strs, parse_path
+from libs.utils import convert_query, convert_document
 from models.project import Project
 from models.user import User
 from models.team import Team
@@ -19,6 +19,11 @@ class ProjectHandler(BaseHandler):
 
     @authenticated(scopes=['projects'])
     def get(self, *args, **kwargs):
+        # there are 4 types:
+        # /projects/
+        # /projects/:name (+)
+        # /projects/?username= (*)
+        # /projects/?team= (*)
         if 'user' not in kwargs:
             self.raise401()
 
@@ -28,11 +33,12 @@ class ProjectHandler(BaseHandler):
             project = Project.objects(name=path[0]).first()
             if project and user not in project.members:
                 self.raise401()
+            project_data = convert_document(project)
         else:
             project = Project.objects(members__in=[user]).all()
+            project_data = convert_query(project)
         if project:
-            project_data = json.loads(project.to_json())
-            self.write(json.dumps(project_data))
+            self.write(project_data)
         else:
             self.raise404()
 
@@ -50,6 +56,7 @@ class ProjectHandler(BaseHandler):
             self.raise401()
 
         try:
+            # todo - better arguments handler
             url = url.strip()
             url = url if url else None
             members_list = []
@@ -85,57 +92,48 @@ class ProjectHandler(BaseHandler):
                 leader=project_leader, members=members_list,
                 teams=teams_list, tags=tags_list)
             project.save()
-            print(project)
-            project_data = json.loads(project.to_json())
             self.set_status(201)
-            self.write(project_data)
+            self.write(project.to_json())
         except Exception as e:
             reason = e.message
             self.raise400(reason=reason)
 
+    @authenticated(scopes=['projects'])
     def put(self, *args, **kwargs):
-        '''
-
+        if 'user' not in kwargs or not args:
+            self.raise401()
         name = self.get_argument('name', None)
         description = self.get_argument('description', None)
+        url = self.get_argument('url', None)
         leader = self.get_argument('leader', None)
         members = self.get_argument('members', None)
+        teams = self.get_argument('teams', None)
         repos = self.get_argument('repos', None)
         tags = self.get_argument('tags', None)
-        response = {}
+
+        user = kwargs['user']
         update = {}
         if name:
             update['name'] = name
         if description:
             update['description'] = description
+        if url:
+            update['url'] = url
         if leader:
             update['leader'] = leader
         if members:
             update['members'] = members
+        if teams:
+            update['teams'] = teams
         if repos:
             update['repos'] = repos
         if tags:
-            update['tags'] = [str(tag).strip() for tag in tags.split(',')]
-        document = {'$set': update}
-        if project.update(query_id, document):
-            data = project.query(query_id)
-            response = get_respmsg(1001, data)
-        else:
-            response = get_respmsg(-1001)
-        '''
+            tags_list = parse_listed_strs(tags)
+            update['tags'] = tags_list
         response = {}
         self.write(response)
 
+    @authenticated(scopes=['projects'])
     def delete(self, *args, **kwargs):
         response = {}
-        '''
-        if ObjectId.is_valid(query_id):
-            spec = query_id
-        else:
-            spec = {'name': query_id}
-        if project.delete(spec):
-            response = get_respmsg(1002)
-        else:
-            response = get_respmsg(-1002)
-        '''
         self.write(response)
