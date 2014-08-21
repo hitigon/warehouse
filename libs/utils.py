@@ -2,7 +2,7 @@
 #
 # @name: libs/utils.py
 # @create: Apr. 27th, 2014
-# @update: Aug. 20th, 2014
+# @update: Aug. 21th, 2014
 # @author: hitigon@gmail.com
 import time
 import json
@@ -14,6 +14,7 @@ import hashlib
 import random
 import config
 import pickle
+import bcrypt
 from bson.objectid import ObjectId
 from datetime import datetime, timedelta
 from bson.binary import Binary
@@ -49,6 +50,10 @@ def create_id():
 
 def create_secret():
     return base64.b64encode(uuid.uuid4().bytes + uuid.uuid4().bytes)
+
+
+def create_password(password):
+    return bcrypt.hashpw(password.encode(), bcrypt.gensalt())
 
 
 def decode_basic_auth(s):
@@ -136,3 +141,13 @@ def convert_query(query_set):
     for document in query_set:
         result.append(convert_document(document))
     return json.dumps(result)
+
+
+def document_only_filter(doc, filter_set):
+    if not doc or not isinstance(doc, Document):
+        return None
+    result = {}
+    for field in doc:
+        if field in filter_set:
+            result[field] = convert_document(doc[field])
+    return result

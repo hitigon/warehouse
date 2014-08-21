@@ -1,7 +1,8 @@
 #!/usr/bin/env python
 #
 # @name: models/user.py
-# @date: Aug. 7th, 2014
+# @create: Aug. 7th, 2014
+# @update: Aug. 21th, 2014
 # @author: hitigon@gmail.com
 from __future__ import print_function
 from datetime import datetime
@@ -20,5 +21,4 @@ class User(Document):
     last_name = StringField()
     ip = StringField()
     create_time = DateTimeField(default=datetime.utcnow())
-    update_time = DateTimeField()
     login_time = DateTimeField()

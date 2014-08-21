@@ -2,7 +2,7 @@
 #
 # @name: manager.py
 # @create: Apr. 22th, 2014
-# @update: Aug. 20th, 2014
+# @update: Aug. 21th, 2014
 # @author: hitigon@gmail.com
 import logging
 import sys
@@ -30,9 +30,9 @@ application = tornado.web.Application([
     (r'/token/?', auth.TokenHandler),
     #(r'/signin/?', user.SigninHandler),
     (r'/signup/?', user.SignupHandler),
-    (r'/users/?', user.UserHandler),
-    (r'/users/([\w.]+)/?', user.UserHandler),
-    (r'/users/([\w.]+)/(edit|delete)/?', user.UserHandler),
+    (r'/profile/?', user.ProfileHandler),
+    (r'/profile/([\w.]+)/?', user.ProfileHandler),
+    # (r'/users/([\w.]+)/(edit|delete)/?', user.UserHandler),
     (r'/repos/?', repo.RepoHandler),
     (r'/repos/([\w\-._/]+)+', repo.RepoHandler),
     #(r"/repos/([\w.]+)/([\w.@/]+)/?", repo.RepoHandler),
