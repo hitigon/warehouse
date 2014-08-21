@@ -93,7 +93,7 @@ class ProjectHandler(BaseHandler):
                 teams=teams_list, tags=tags_list)
             project.save()
             self.set_status(201)
-            self.write(project.to_json())
+            self.write(convert_document(project))
         except Exception as e:
             reason = e.message
             self.raise400(reason=reason)

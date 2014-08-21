@@ -6,9 +6,9 @@
 # @author: hitigon@gmail.com
 from __future__ import print_function
 import re
-import json
 from scm.git import GitRepo
 from libs.utils import parse_listed_strs, parse_path
+from libs.utils import convert_query, convert_document
 from models.repo import Repo
 from oauth.protector import authenticated
 from . import BaseHandler
@@ -49,9 +49,10 @@ class RepoHandler(BaseHandler):
                     scm_repo, path[1:])
             if not repo_contents:
                 self.raise404()
+            repo_data = convert_document(repo)
         else:
             repo = Repo.objects(owner=user).all()
-        repo_data = json.loads(repo.to_json())
+            repo_data = convert_query(repo)
         if repo_type and repo_contents:
             repo_data['repo_info'] = repo_info
             repo_data['repo_type'] = repo_type
@@ -59,7 +60,7 @@ class RepoHandler(BaseHandler):
             repo_data['repo_branches'] = repo_branches
             repo_data['repo_tags'] = repo_tags
             repo_data['repo_contents'] = repo_contents
-        self.write(json.dumps(repo_data))
+        self.write(repo_data)
 
     @authenticated(scopes=['repos'])
     def post(self, *args, **kwargs):
@@ -80,9 +81,8 @@ class RepoHandler(BaseHandler):
                         path=path, scm=scm, owner=user,
                         team=team, tags=tags_list)
             repo.save()
-            repo_data = json.loads(repo.to_json())
             self.set_status(201)
-            self.write(repo_data)
+            self.write(convert_document(repo))
         except Exception as e:
             reason = e.message
             self.raise400(reason=reason)
@@ -116,9 +116,8 @@ class RepoHandler(BaseHandler):
             path = parse_path(args[0])
             Repo.objects(owner=user, name=path[0]).update_one(**update)
             repo = Repo.objects(owner=user, name=name or path[0]).first()
-            repo_data = json.loads(repo.to_json())
             self.set_status(201)
-            self.write(repo_data)
+            self.write(convert_document(repo))
         except Exception as e:
             reason = e.message
             self.raise400(reason=reason)
