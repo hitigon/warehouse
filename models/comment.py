@@ -1,39 +1,46 @@
 #!/usr/bin/env python
 #
 # @name: models/comment.py
-# @date: Aug. 8th, 2014
+# @create: Aug. 8th, 2014
+# @update: Aug. 21th, 2014
 # @author: hitigon@gmail.com
 from __future__ import print_function
-from datetime import datetime
 from mongoengine import EmbeddedDocument
 from mongoengine import StringField, DateTimeField
-from mongoengine import ReferenceField
+from mongoengine import ReferenceField, BooleanField
+from utils import get_utc_time
 
-
-__all__ = ('ProjectComment', 'TaskComment', 'RepoComment')
+__all__ = ('ProjectComment', 'TaskComment', 'CodeComment')
 
 
 class ProjectComment(EmbeddedDocument):
-    content = StringField()
+    content = StringField(required=True)
     from user import User
-    user = ReferenceField(User)
-    create_time = DateTimeField(default=datetime.utcnow())
-    update_time = DateTimeField()
+    author = ReferenceField(User)
+    reply_to = ReferenceField(User)
+    create_time = DateTimeField(default=get_utc_time())
 
 
 class TaskComment(EmbeddedDocument):
-    content = StringField()
+    content = StringField(required=True)
     from user import User
-    user = ReferenceField(User)
-    create_time = DateTimeField(default=datetime.utcnow())
-    update_time = DateTimeField()
+    author = ReferenceField(User)
+    reply_to = ReferenceField(User)
+    create_time = DateTimeField(default=get_utc_time())
 
 
-class RepoComment(EmbeddedDocument):
-    content = StringField()
+class CodeComment(EmbeddedDocument):
+    lines = StringField(required=True)
+    content = StringField(required=True)
     from user import User
-    user = ReferenceField(User)
-    create_time = DateTimeField(default=datetime.utcnow())
-    update_time = DateTimeField()
-    # commit
-    # file/code
+    author = ReferenceField(User)
+    reply_to = ReferenceField(User)
+    create_time = DateTimeField(default=get_utc_time())
+
+
+class CodeReview(EmbeddedDocument):
+    content = StringField(required=True)
+    from user import User
+    reviewer = ReferenceField(User)
+    approved = BooleanField(default=False)
+    create_time = DateTimeField(default=get_utc_time())

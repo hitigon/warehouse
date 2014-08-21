@@ -8,8 +8,8 @@ from __future__ import print_function
 from utils import parse_path, create_password
 from utils import document_only_filter
 from base import BaseHandler
-from models.user import User
 from oauth.protector import authenticated
+from models.user import User
 
 
 class ProfileHandler(BaseHandler):

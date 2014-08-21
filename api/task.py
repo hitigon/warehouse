@@ -5,13 +5,17 @@
 # @update: Aug. 21th, 2014
 # @author: hitigon@gmail.com
 from __future__ import print_function
-import tornado.web
-from model import task
+from base import BaseHandler
+from oauth.protector import authenticated
+from models.task import Task
 
 
-class TaskHandler(tornado.web.RequestHandler):
+class TaskHandler(BaseHandler):
 
+    @authenticated(scopes=['tasks'])
     def get(self, *args, **kwargs):
+        # /task
+        # /task/:id
         # if query_id:
         #     if ObjectId.is_valid(query_id):
         #         response = task.query(query_id)
@@ -25,6 +29,7 @@ class TaskHandler(tornado.web.RequestHandler):
         response = {}
         self.write(response)
 
+    @authenticated(scopes=['tasks'])
     def post(self, *args, **kwargs):
         # category = self.get_argument('category', None)
         # description = self.get_argument('description', None)
@@ -49,6 +54,7 @@ class TaskHandler(tornado.web.RequestHandler):
         response = {}
         self.write(response)
 
+    @authenticated(scopes=['tasks'])
     def put(self, *args, **kwargs):
         # category = self.get_argument('category', None)
         # description = self.get_argument('description', None)
@@ -85,6 +91,7 @@ class TaskHandler(tornado.web.RequestHandler):
         response = {}
         self.write(response)
 
+    @authenticated(scopes=['tasks'])
     def delete(self, *args, **kwargs):
         # if ObjectId.is_valid(query_id):
         #     spec = query_id

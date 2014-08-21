@@ -11,15 +11,12 @@ import tornado.web
 from mongoengine import connect
 from api import client
 from api import auth
-#from lib import util
 from api import user
 from api import repo
 from api import project
-#from api import task
+from api import task
 
 settings = {
-    #'cookie_secret': util.create_cookie_secret(),
-    #'login_url': '/login',
     'debug': True,
     'autoreload': True
 }
@@ -39,7 +36,7 @@ application = tornado.web.Application([
     (r'/projects/?', project.ProjectHandler),
     (r'/projects/([\w.]+)/?', project.ProjectHandler),
     # (r'/projects/(user|team)/([\w.]+)/?', project.ProjectHandler),
-    #(r"/tasks/?", task.TaskHandler),
+    (r"/tasks/?", task.TaskHandler),
     #(r"/tasks/([\w.]+)/?", task.TaskHandler),
     (r'/clients/?', client.ClientHandler),
 ], **settings)
