@@ -79,31 +79,25 @@ class ProfileHandler(BaseHandler):
             self.raise400(reason=reason)
 
 
-class SignupHandler(BaseHandler):
+class RegisterHandler(BaseHandler):
 
     def post(self, *args, **kwargs):
-        if args:
-            self.raise403()
-        # username = obj.get_argument('username', None)
-        # email = obj.get_argument('email', None)
-        # password = obj.get_argument('password', None)
-        # first_name = obj.get_argument('first_name', None)
-        # last_name = obj.get_argument('last_name', None)
+        username = self.get_argument('username', None)
+        email = self.get_argument('email', None)
+        password = self.get_argument('password', None)
+        first_name = self.get_argument('first_name', None)
+        last_name = self.get_argument('last_name', None)
+        ip = self.get_argument('user_ip', None)
 
-        # response = {}
-        # if password:
-        #     password = bcrypt.hashpw(password.encode(), bcrypt.gensalt())
-
-        # try:
-        #     user = User(username=username, email=email,
-        #                 password=password, first_name=first_name,
-        #                 last_name=last_name, ip=obj.get_client_ip())
-        #     user.save()
-        #     user_data = json.loads(user.to_json())
-        #     response = obj.get_response(
-        #         data=user_data, success=CreateSuccess(success_msg or 'User added'))
-        # except Exception as e:
-        #     response = obj.get_response(error=e)
-
-        # obj.write(response)
-        pass
+        try:
+            password = create_password(password) if password else None
+            user = User(username=username, email=email,
+                        password=password, first_name=first_name,
+                        last_name=last_name, ip=ip).save()
+            filter_set = set(
+                ['id', 'username', 'email', 'first_name', 'last_name'])
+            self.set_status(201)
+            self.write(document_only_filter(user, filter_set))
+        except Exception as e:
+            reason = e.message
+            self.raise400(reason=reason)

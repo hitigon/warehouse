@@ -29,7 +29,7 @@ application = tornado.web.Application([
     (r'/authorize/?', auth.AuthHandler),
     (r'/token/?', auth.TokenHandler),
     #(r'/signin/?', user.SigninHandler),
-    (r'/signup/?', user.SignupHandler),
+    (r'/signup/?', user.RegisterHandler),
     (r'/profile/?', user.ProfileHandler),
     (r'/profile/([\w.]+)/?', user.ProfileHandler),
     # (r'/users/([\w.]+)/(edit|delete)/?', user.UserHandler),
