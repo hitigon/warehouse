@@ -42,7 +42,6 @@ class ProjectHandler(BaseHandler):
 
     @authenticated(scopes=['projects'])
     def get(self, *args, **kwargs):
-        # there are 4 types:
         # /projects/
         # /projects/:name (+)
         # /projects/?username= (*)
@@ -54,16 +53,15 @@ class ProjectHandler(BaseHandler):
         if args:
             path = parse_path(args[0])
             project = Project.objects(name=path[0]).first()
+            if not project:
+                self.raise404()
             if project and user not in project.members:
                 self.raise401()
             project_data = document_to_json(project, filter_set=_FILTER)
         else:
             project = Project.objects(members__in=[user]).all()
             project_data = query_to_json(project, filter_set=_FILTER)
-        if project:
-            self.write(project_data)
-        else:
-            self.raise404()
+        self.write(project_data)
 
     @authenticated(scopes=['projects'])
     def post(self, *args, **kwargs):

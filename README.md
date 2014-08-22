@@ -18,7 +18,27 @@ Clients
 
 As I mentioned, Warehouse is only a set of APIs, and you can build your own clients. But, I will provide a web-server based client in future, and a mobile app as well (maybe).
 
-REST APIs
----------
+REST API
+--------
 
-update later
+#### Projects
+
+`GET /projects/`
+
+`GET /projects/:name`
+
+`POST /projects/`
+
+`PUT /projects/:name`
+
+`DELETE /projects/:name`
+
+#### Tasks
+
+#### Repos
+
+#### Teams
+
+#### Profile
+
+#### Auth

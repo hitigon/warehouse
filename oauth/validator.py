@@ -2,11 +2,12 @@
 #
 # @name: oauth/validator.py
 # @create: Aug. 9th, 2014
-# @update: Aug. 21th, 2014
+# @update: Aug. 22th, 2014
 # @author: hitigon@gmail.com
 from __future__ import print_function
 import bcrypt
 from utils import get_auth_base_uri, get_utc_time
+from utils import decode_basic_auth
 from oauthlib.oauth2 import RequestValidator
 from models.oauth.client import Client
 from models.oauth.code import Code
@@ -21,6 +22,7 @@ CODE_EXPIRE_TIME = 6000
 class OAuth2Validator(RequestValidator):
 
     def validate_client_id(self, client_id, request, *args, **kwargs):
+        print('test!!!!!', request)
         client = Client.objects(client_id=client_id).first()
         return client is not None
 
@@ -77,8 +79,10 @@ class OAuth2Validator(RequestValidator):
 
     def authenticate_client(self, request, *args, **kwargs):
         # Whichever authentication method suits you, HTTP Basic might work
+        client_secret = decode_basic_auth(request.headers['Authorization'])
         client_id = request.client_id
-        client = Client.objects(client_id=client_id).first()
+        client = Client.objects(
+            client_id=client_id, client_secret=client_secret).first()
         request.client = client
         return client is not None
 
