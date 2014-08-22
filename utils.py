@@ -19,7 +19,7 @@ from bson.objectid import ObjectId
 from datetime import datetime, timedelta
 from bson.binary import Binary
 from oauthlib.common import Request
-from mongoengine import Document, QuerySet
+from mongoengine import Document
 
 
 def get_utc_time(seconds=0):
