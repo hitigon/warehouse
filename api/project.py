@@ -9,7 +9,6 @@ from oauth.protector import authenticated
 from base import BaseHandler
 from utils import parse_listed_strs, parse_path
 from utils import convert_query, convert_document
-from utils import get_utc_time
 from models.project import Project
 from models.user import User
 from models.team import Team

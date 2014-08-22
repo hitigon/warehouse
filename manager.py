@@ -37,7 +37,7 @@ application = tornado.web.Application([
     (r'/projects/([\w.]+)/?', project.ProjectHandler),
     # (r'/projects/(user|team)/([\w.]+)/?', project.ProjectHandler),
     (r"/tasks/?", task.TaskHandler),
-    #(r"/tasks/([\w.]+)/?", task.TaskHandler),
+    (r"/tasks/([\w.]+)/?", task.TaskHandler),
     (r'/clients/?', client.ClientHandler),
 ], **settings)
 

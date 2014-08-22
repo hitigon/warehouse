@@ -135,8 +135,8 @@ def convert_document(obj):
 
 
 def convert_query(query_set):
-    if not query_set or not isinstance(query_set, QuerySet):
-        return []
+    if not query_set:
+        return json.dumps([])
     result = []
     for document in query_set:
         result.append(convert_document(document))

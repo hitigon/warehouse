@@ -40,6 +40,14 @@ class TaskHandler(BaseHandler):
         else:
             project_name = self.get_argument('project', None)
             username = self.get_argument('username', None)
+            try:
+                project_name = parse_path(project_name)[0]
+            except IndexError:
+                project_name = None
+            try:
+                username = parse_path(username)[0]
+            except IndexError:
+                username = None
             if project_name and username:
                 user = User.objects(username=username).first()
                 project = Project.objects(name=project_name).first()
@@ -57,29 +65,32 @@ class TaskHandler(BaseHandler):
                 for project in projects:
                     task = Task.objects(project=project).first()
                     tasks.append(task)
-            if not tasks:
-                self.raise404()
             task_data = convert_query(tasks)
         self.write(task_data)
 
     @authenticated(scopes=['tasks'])
     def post(self, *args, **kwargs):
-        if 'user' not in kwargs:
+        if 'user' not in kwargs or args:
             self.raise401()
         category = self.get_argument('category', None)
         description = self.get_argument('description', None)
         project_name = self.get_argument('project', None)
-        status = self.get_argument('priority', None)
+        status = self.get_argument('status', None)
         priority = self.get_argument('priority', None)
         assign_to = self.get_argument('members', None)
-        due = self.get_argument('due', None)  # days
+        due = self.get_argument('due', None)  # days or date
         tags = self.get_argument('tags', None)
+
+        try:
+            due_day = int(due)
+        except ValueError:
+            due_day = 0
 
         try:
             user = kwargs['user']
             project = Project.objects(name=project_name).first()
             if not project or user not in project.members:
-                raise Exception('')
+                raise Exception('unauthenticated project')
             assign_to_list = []
             if assign_to:
                 for member in parse_listed_strs(assign_to):
@@ -87,7 +98,7 @@ class TaskHandler(BaseHandler):
                     if not u:
                         continue
                     assign_to_list.append(u)
-            due_time = get_utc_time(due * 24 * 3600)
+            due_time = get_utc_time(due_day * 24 * 3600)
             tags_list = parse_listed_strs(tags)
             task = Task(
                 category=category, description=description, project=project,
