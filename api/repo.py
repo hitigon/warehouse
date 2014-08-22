@@ -2,16 +2,31 @@
 #
 # @name: api/repo.py
 # @create: Apr. 22th, 2014
-# @update: Aug. 21th, 2014
+# @update: Aug. 22th, 2014
 # @author: hitigon@gmail.com
 from __future__ import print_function
 import re
 from utils import parse_listed_strs, parse_path
-from utils import convert_query, convert_document
+from utils import document_to_json, query_to_json
 from base import BaseHandler
 from oauth.protector import authenticated
 from scm.git import GitRepo
 from models.repo import Repo
+
+_SUB_FILTER = {
+    'password': False,
+    'ip': False,
+    'create_time': False,
+    'login_time': False,
+}
+
+_FILTER = {
+    'owner': _SUB_FILTER,
+    'team': {
+        'leader': _SUB_FILTER,
+        'members': _SUB_FILTER,
+    },
+}
 
 
 class RepoHandler(BaseHandler):
@@ -49,10 +64,10 @@ class RepoHandler(BaseHandler):
                     scm_repo, path[1:])
             if not repo_contents:
                 self.raise404()
-            repo_data = convert_document(repo)
+            repo_data = document_to_json(repo, filter_set=_FILTER)
         else:
             repo = Repo.objects(owner=user).all()
-            repo_data = convert_query(repo)
+            repo_data = query_to_json(repo, filter_set=_FILTER)
         if repo_type and repo_contents:
             repo_data['repo_info'] = repo_info
             repo_data['repo_type'] = repo_type
@@ -81,8 +96,9 @@ class RepoHandler(BaseHandler):
                         path=path, scm=scm, owner=user,
                         team=team, tags=tags_list)
             repo.save()
+            repo_data = document_to_json(repo, filter_set=_FILTER)
             self.set_status(201)
-            self.write(convert_document(repo))
+            self.write(repo_data)
         except Exception as e:
             reason = e.message
             self.raise400(reason=reason)
@@ -116,8 +132,9 @@ class RepoHandler(BaseHandler):
             path = parse_path(args[0])
             Repo.objects(owner=user, name=path[0]).update_one(**update)
             repo = Repo.objects(owner=user, name=name or path[0]).first()
+            repo_data = document_to_json(repo, filter_set=_FILTER)
             self.set_status(201)
-            self.write(convert_document(repo))
+            self.write(repo_data)
         except Exception as e:
             reason = e.message
             self.raise400(reason=reason)
@@ -129,9 +146,7 @@ class RepoHandler(BaseHandler):
         try:
             user = kwargs['user']
             path = parse_path(args[0])
-            repo = Repo.objects(owner=user, name=path[0])
-            if repo:
-                repo.delete()
+            Repo.objects(owner=user, name=path[0]).delete()
             self.set_status(204)
             self.finish()
         except Exception as e:

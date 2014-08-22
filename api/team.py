@@ -2,15 +2,27 @@
 #
 # @name: api/team.py
 # @create: Apr. 25th, 2014
-# @update: Aug. 21th, 2014
+# @update: Aug. 22th, 2014
 # @author: hitigon@gmail.com
 from __future__ import print_function
 from oauth.protector import authenticated
 from base import BaseHandler
 from utils import parse_listed_strs, parse_path
-from utils import convert_query, convert_document
+from utils import document_to_json, query_to_json
 from models.user import User
 from models.team import Team
+
+_SUB_FILTER = {
+    'password': False,
+    'ip': False,
+    'create_time': False,
+    'login_time': False,
+}
+
+_FILTER = {
+    'leader': _SUB_FILTER,
+    'members': _SUB_FILTER,
+}
 
 
 class TeamHandler(BaseHandler):
@@ -29,7 +41,7 @@ class TeamHandler(BaseHandler):
             team = Team.objects(name=path[0]).first()
             if not team:
                 self.raise404()
-            team_data = convert_document(team)
+            team_data = document_to_json(team, filter_set=_FILTER)
         else:
             username = self.get_argument('username', None)
             try:
@@ -39,7 +51,7 @@ class TeamHandler(BaseHandler):
             if username:
                 user = User.objects(username=username).fisrt()
             teams = Team.objects(members__in=[user]).all()
-            team_data = convert_query(teams)
+            team_data = query_to_json(teams, filter_set=_FILTER)
         self.write(team_data)
 
     @authenticated(scopes=['teams'])
@@ -74,8 +86,9 @@ class TeamHandler(BaseHandler):
                 url=url, leader=team_leader,
                 members=members_list, tags=tags_list)
             team.save()
+            team_data = document_to_json(team, filter_set=_FILTER)
             self.set_status(201)
-            self.write(convert_document(team))
+            self.write(team_data)
         except Exception as e:
             reason = e.message
             self.raise400(reason=reason)
@@ -121,8 +134,9 @@ class TeamHandler(BaseHandler):
         try:
             Team.objects(name=path[0]).update_one(**update)
             team = Team.objects(name=name or path[0]).first()
+            team_data = document_to_json(team, filter_set=_FILTER)
             self.set_status(201)
-            self.write(convert_document(team))
+            self.write(team_data)
         except Exception as e:
             reason = e.message
             self.raise400(reason=reason)

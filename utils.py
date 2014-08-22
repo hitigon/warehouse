@@ -2,7 +2,7 @@
 #
 # @name: utils.py
 # @create: Apr. 27th, 2014
-# @update: Aug. 21th, 2014
+# @update: Aug. 22th, 2014
 # @author: hitigon@gmail.com
 import time
 import json
@@ -19,7 +19,7 @@ from bson.objectid import ObjectId
 from datetime import datetime, timedelta
 from bson.binary import Binary
 from oauthlib.common import Request
-from mongoengine import Document
+from mongoengine import Document, QuerySet
 
 
 def get_utc_time(seconds=0):
@@ -109,22 +109,28 @@ def parse_path(s):
     return parse_listed_strs(s, '/')
 
 
-def convert_document(obj):
+def convert_document(obj, filter_set=None):
     if isinstance(obj, Document):
         result = {}
         for field in obj:
             item = obj[field]
-            result[field] = convert_document(item)
+            if filter_set and field in filter_set:
+                if filter_set[field]:
+                    result[field] = convert_document(item, filter_set[field])
+                else:
+                    continue
+            else:
+                result[field] = convert_document(item, filter_set)
         return result
     elif isinstance(obj, list):
         result = []
         for item in obj:
-            result.append(convert_document(item))
+            result.append(convert_document(item, filter_set))
         return result
     elif isinstance(obj, dict):
         result = {}
         for k, v in obj.items():
-            result[k] = convert_document(v)
+            result[k] = convert_document(v, filter_set)
         return result
     elif isinstance(obj, ObjectId):
         return str(obj)
@@ -134,20 +140,18 @@ def convert_document(obj):
         return obj
 
 
-def convert_query(query_set):
-    if not query_set:
+def document_to_json(obj, default_deref=False, filter_set=None):
+    if default_deref and isinstance(obj, Document):
+        return obj.to_json()
+    return convert_document(obj, filter_set)
+
+
+def query_to_json(query, default_deref=False, filter_set=None):
+    if not query:
         return json.dumps([])
+    if default_deref and isinstance(query, QuerySet):
+        return query.to_json()
     result = []
-    for document in query_set:
-        result.append(convert_document(document))
+    for doc in query:
+        result.append(convert_document(doc, filter_set))
     return json.dumps(result)
-
-
-def document_only_filter(doc, filter_set):
-    if not doc or not isinstance(doc, Document):
-        return None
-    result = {}
-    for field in doc:
-        if field in filter_set:
-            result[field] = convert_document(doc[field])
-    return result

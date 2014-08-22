@@ -2,17 +2,39 @@
 #
 # @name: api/project.py
 # @create: Jun. 10th, 2014
-# @update: Aug. 21th, 2014
+# @update: Aug. 22th, 2014
 # @author: hitigon@gmail.com
 from __future__ import print_function
 from utils import get_utc_time
 from utils import parse_path, parse_listed_strs
-from utils import convert_query, convert_document
+from utils import document_to_json, query_to_json
 from base import BaseHandler
 from oauth.protector import authenticated
 from models.task import Task
 from models.project import Project
 from models.user import User
+
+_SUB_FILTER = {
+    'password': False,
+    'ip': False,
+    'create_time': False,
+    'login_time': False,
+}
+
+_FILTER = {
+    'project': {
+        'leader': _SUB_FILTER,
+        'members': _SUB_FILTER,
+        'repos': {
+            'owner': _SUB_FILTER,
+            'team': {
+                'leader': _SUB_FILTER,
+                'members': _SUB_FILTER,
+            },
+        },
+    },
+    'assign_to': _SUB_FILTER,
+}
 
 
 class TaskHandler(BaseHandler):
@@ -36,7 +58,7 @@ class TaskHandler(BaseHandler):
             task = Task.objects(id=path[0]).first()
             if not task:
                 self.raise404()
-            task_data = convert_document(task)
+            task_data = document_to_json(task, filter_set=_FILTER)
         else:
             username = self.get_argument('username', None)
             project_name = self.get_argument('project', None)
@@ -65,7 +87,7 @@ class TaskHandler(BaseHandler):
                 for project in projects:
                     ts = Task.objects(project=project).all()
                     tasks += list(ts)
-            task_data = convert_query(tasks)
+            task_data = query_to_json(tasks, filter_set=_FILTER)
         self.write(task_data)
 
     @authenticated(scopes=['tasks'])
@@ -104,8 +126,9 @@ class TaskHandler(BaseHandler):
                 status=status, priority=priority, assign_to=assign_to_list,
                 due=due_time, tags=tags_list)
             task.save()
+            task_data = document_to_json(task, filter_set=_FILTER)
             self.set_status(201)
-            self.write(convert_document(task))
+            self.write(task_data)
         except Exception as e:
             reason = e.message
             self.raise400(reason=reason)
@@ -164,8 +187,9 @@ class TaskHandler(BaseHandler):
         try:
             Task.objects(id=task_id).update_one(**update)
             task = Task.objects(id=task_id).first()
+            task_data = document_to_json(task, filter_set=_FILTER)
             self.set_status(201)
-            self.write(convert_document(task))
+            self.write(task_data)
         except Exception as e:
             reason = e.message
             self.raise400(reason=reason)

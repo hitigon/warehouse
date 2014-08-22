@@ -2,17 +2,26 @@
 #
 # @name: api/client.py
 # @create: Aug. 10th, 2014
-# @update: Aug. 21th, 2014
+# @update: Aug. 22th, 2014
 # @author: hitigon@gmail.com
 from __future__ import print_function
 from utils import parse_path, parse_listed_strs
-from utils import convert_query, convert_document
+from utils import document_to_json, query_to_json
 from utils import create_id, create_secret
 from base import BaseHandler
 from oauth.protector import authenticated
 from models.oauth.client import Client
 
 __all__ = ('Client',)
+
+_FILTER = {
+    'user': {
+        'password': False,
+        'ip': False,
+        'create_time': False,
+        'login_time': False,
+    },
+}
 
 
 class ClientHandler(BaseHandler):
@@ -30,10 +39,10 @@ class ClientHandler(BaseHandler):
             client = Client.objects(user=user, app_name=path[0]).first()
             if not client:
                 self.raise404()
-            client_data = convert_document(client)
+            client_data = document_to_json(client, filter_set=_FILTER)
         else:
             clients = Client.objects(user=user).all()
-            client_data = convert_query(clients)
+            client_data = query_to_json(clients, filter_set=_FILTER)
         self.write(client_data)
 
     @authenticated(scopes=["users"])
@@ -69,8 +78,9 @@ class ClientHandler(BaseHandler):
                 default_redirect_uri=default_redirect_uri, website=website,
                 app_name=app_name, description=description)
             client.save()
+            client_data = document_to_json(client, filter_set=_FILTER)
             self.set_status(201)
-            self.write(convert_document(client))
+            self.write(client_data)
         except Exception as e:
             reason = e.message
             self.raise400(reason=reason)
@@ -101,8 +111,9 @@ class ClientHandler(BaseHandler):
         try:
             Client.objects(app_name=path[0]).update_one(**update)
             client = Client.objects(app_name=app_name or path[0]).first()
+            client_data = document_to_json(client, filter_set=_FILTER)
             self.set_status(201)
-            self.write(convert_document(client))
+            self.write(client_data)
         except Exception as e:
             reason = e.message
             self.raise400(reason=reason)

@@ -2,17 +2,40 @@
 #
 # @name: api/project.py
 # @create: Apr. 25th, 2014
-# @update: Aug. 21th, 2014
+# @update: Aug. 22th, 2014
 # @author: hitigon@gmail.com
 from __future__ import print_function
 from oauth.protector import authenticated
 from base import BaseHandler
 from utils import parse_listed_strs, parse_path
-from utils import convert_query, convert_document
+from utils import document_to_json, query_to_json
 from models.project import Project
 from models.user import User
 from models.team import Team
 from models.repo import Repo
+
+_SUB_FILTER = {
+    'password': False,
+    'ip': False,
+    'create_time': False,
+    'login_time': False,
+}
+
+_FILTER = {
+    'leader': _SUB_FILTER,
+    'members': _SUB_FILTER,
+    'team': {
+        'leader': _SUB_FILTER,
+        'members': _SUB_FILTER,
+    },
+    'repos': {
+        'owner': _SUB_FILTER,
+        'team': {
+            'leader': _SUB_FILTER,
+            'members': _SUB_FILTER,
+        }
+    },
+}
 
 
 class ProjectHandler(BaseHandler):
@@ -33,10 +56,10 @@ class ProjectHandler(BaseHandler):
             project = Project.objects(name=path[0]).first()
             if project and user not in project.members:
                 self.raise401()
-            project_data = convert_document(project)
+            project_data = document_to_json(project, filter_set=_FILTER)
         else:
             project = Project.objects(members__in=[user]).all()
-            project_data = convert_query(project)
+            project_data = query_to_json(project, filter_set=_FILTER)
         if project:
             self.write(project_data)
         else:
@@ -92,8 +115,9 @@ class ProjectHandler(BaseHandler):
                 leader=project_leader, members=members_list,
                 teams=teams_list, tags=tags_list)
             project.save()
+            project_data = document_to_json(project, filter_set=_FILTER)
             self.set_status(201)
-            self.write(convert_document(project))
+            self.write(project_data)
         except Exception as e:
             reason = e.message
             self.raise400(reason=reason)
@@ -162,8 +186,9 @@ class ProjectHandler(BaseHandler):
         try:
             Project.objects(name=path[0]).update_one(**update)
             project = Repo.objects(name=name or path[0]).first()
+            project_data = document_to_json(project, filter_set=_FILTER)
             self.set_status(201)
-            self.write(convert_document(project))
+            self.write(project_data)
         except Exception as e:
             reason = e.message
             self.raise400(reason=reason)
