@@ -118,7 +118,7 @@ class ProjectHandler(BaseHandler):
         user = kwargs['user']
         path = parse_path(args[0])
         project = Project.objects(name=path[0]).first()
-        if project and user not in project.members:
+        if not project or user not in project.members:
             self.raise401()
         project_leader = project.leader
         update = {}

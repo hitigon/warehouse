@@ -5,22 +5,21 @@
 # @update: Aug. 21th, 2014
 # @author: hitigon@gmail.com
 from __future__ import print_function
-from datetime import datetime
 from mongoengine import Document
 from mongoengine import StringField, DateTimeField, URLField
 from mongoengine import ListField, ReferenceField
+from utils import get_utc_time
 
 
 __all__ = ('Team',)
 
 
 class Team(Document):
+    from user import User
     name = StringField(required=True, unique=True)
     description = StringField()
     url = URLField()
-    from user import User
-    founder = ReferenceField(User)
+    leader = ReferenceField(User)
     members = ListField(ReferenceField(User))
-    create_time = DateTimeField(default=datetime.utcnow())
-    update_time = DateTimeField()
+    create_time = DateTimeField(default=get_utc_time())
     tags = ListField(StringField())

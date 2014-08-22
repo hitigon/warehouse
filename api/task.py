@@ -161,7 +161,6 @@ class TaskHandler(BaseHandler):
         if tags:
             tags_list = parse_listed_strs(tags)
             update['set__tags'] = tags_list
-        print(update)
         try:
             Task.objects(id=task_id).update_one(**update)
             task = Task.objects(id=task_id).first()

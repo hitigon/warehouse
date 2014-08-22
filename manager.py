@@ -15,6 +15,7 @@ from api import user
 from api import repo
 from api import project
 from api import task
+from api import team
 
 settings = {
     'debug': True,
@@ -25,7 +26,6 @@ settings = {
 application = tornado.web.Application([
     (r'/authorize/?', auth.AuthHandler),
     (r'/token/?', auth.TokenHandler),
-    #(r'/signin/?', user.SigninHandler),
     (r'/signup/?', user.RegisterHandler),
     (r'/profile/?', user.ProfileHandler),
     (r'/profile/([\w.]+)/?', user.ProfileHandler),
@@ -33,6 +33,8 @@ application = tornado.web.Application([
     (r'/repos/([\w\-._/]+)+', repo.RepoHandler),
     (r'/projects/?', project.ProjectHandler),
     (r'/projects/([\w.]+)/?', project.ProjectHandler),
+    (r'/teams/?', team.TeamHandler),
+    (r'/teams/([\w.]+)/?', team.TeamHandler),
     (r"/tasks/?", task.TaskHandler),
     (r"/tasks/([\w.]+)/?", task.TaskHandler),
     (r'/clients/?', client.ClientHandler),
