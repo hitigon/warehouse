@@ -22,7 +22,6 @@ settings = {
     'autoreload': True
 }
 
-
 application = tornado.web.Application([
     (r'/authorize/?', auth.AuthHandler),
     (r'/token/?', auth.TokenHandler),
@@ -35,9 +34,10 @@ application = tornado.web.Application([
     (r'/projects/([\w.]+)/?', project.ProjectHandler),
     (r'/teams/?', team.TeamHandler),
     (r'/teams/([\w.]+)/?', team.TeamHandler),
-    (r"/tasks/?", task.TaskHandler),
-    (r"/tasks/([\w.]+)/?", task.TaskHandler),
+    (r'/tasks/?', task.TaskHandler),
+    (r'/tasks/([\w.]+)/?', task.TaskHandler),
     (r'/clients/?', client.ClientHandler),
+    (r'/clients/([\w.]+)/?', client.ClientHandler),
 ], **settings)
 
 if __name__ == '__main__':
