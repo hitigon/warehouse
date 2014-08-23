@@ -2,7 +2,7 @@
 #
 # @name: models/comment.py
 # @create: Aug. 8th, 2014
-# @update: Aug. 21th, 2014
+# @update: Aug. 23th, 2014
 # @author: hitigon@gmail.com
 from __future__ import print_function
 from mongoengine import EmbeddedDocument
@@ -22,19 +22,17 @@ class ProjectComment(EmbeddedDocument):
 
 
 class TaskComment(EmbeddedDocument):
-    content = StringField(required=True)
     from user import User
+    content = StringField(required=True)
     author = ReferenceField(User)
-    reply_to = ReferenceField(User)
     create_time = DateTimeField(default=get_utc_time())
 
 
 class CodeComment(EmbeddedDocument):
+    from user import User
     lines = StringField(required=True)
     content = StringField(required=True)
-    from user import User
     author = ReferenceField(User)
-    reply_to = ReferenceField(User)
     create_time = DateTimeField(default=get_utc_time())
 
 

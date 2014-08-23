@@ -2,7 +2,7 @@
 #
 # @name: utils.py
 # @create: Apr. 27th, 2014
-# @update: Aug. 22th, 2014
+# @update: Aug. 23th, 2014
 # @author: hitigon@gmail.com
 import time
 import json
@@ -19,7 +19,7 @@ from bson.objectid import ObjectId
 from datetime import datetime, timedelta
 from bson.binary import Binary
 from oauthlib.common import Request
-from mongoengine import Document, QuerySet
+from mongoengine import Document, QuerySet, EmbeddedDocument
 
 
 def get_utc_time(seconds=0):
@@ -110,7 +110,7 @@ def parse_path(s):
 
 
 def convert_document(obj, filter_set=None):
-    if isinstance(obj, Document):
+    if isinstance(obj, Document) or isinstance(obj, EmbeddedDocument):
         result = {}
         for field in obj:
             item = obj[field]

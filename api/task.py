@@ -2,7 +2,7 @@
 #
 # @name: api/project.py
 # @create: Jun. 10th, 2014
-# @update: Aug. 22th, 2014
+# @update: Aug. 23th, 2014
 # @author: hitigon@gmail.com
 from __future__ import print_function
 from utils import get_utc_time
@@ -13,6 +13,7 @@ from oauth.protector import authenticated
 from models.task import Task
 from models.project import Project
 from models.user import User
+from models.comment import TaskComment
 
 _SUB_FILTER = {
     'password': False,
@@ -34,6 +35,11 @@ _FILTER = {
         },
     },
     'assign_to': _SUB_FILTER,
+    'comments': False,
+}
+
+_COMMENT_FILTER = {
+    'author': _SUB_FILTER,
 }
 
 
@@ -58,6 +64,8 @@ class TaskHandler(BaseHandler):
             task = Task.objects(id=path[0]).first()
             if not task:
                 self.raise404()
+            if user not in task.project.members:
+                self.raise401()
             task_data = document_to_json(task, filter_set=_FILTER)
         else:
             username = self.get_argument('username', None)
@@ -208,6 +216,54 @@ class TaskHandler(BaseHandler):
             Task.objects(id=task_id).delete()
             self.set_status(204)
             self.finish()
+        except Exception as e:
+            reason = e.message
+            self.raise400(reason=reason)
+
+
+class TaskCommentHandler(BaseHandler):
+
+    @authenticated(scopes=['tasks'])
+    def get(self, *args, **kwargs):
+        if 'user' not in kwargs:
+            self.raise401()
+        if not args:
+            self.raise404()
+        path = parse_path(args[0])
+        task = Task.objects(id=path[0]).first()
+        if not task:
+            self.raise404()
+        user = kwargs['user']
+        if user not in task.project.members:
+            self.raise401()
+
+        comments = task.comments
+        comment_data = query_to_json(comments, filter_set=_COMMENT_FILTER)
+        self.write(comment_data)
+
+    @authenticated(scopes=['tasks'])
+    def post(self, *args, **kwargs):
+        if 'user' not in kwargs:
+            self.raise401()
+        if not args:
+            self.raise404()
+
+        path = parse_path(args[0])
+        task = Task.objects(id=path[0]).first()
+        if not task:
+            self.raise404()
+        user = kwargs['user']
+        if user not in task.project.members:
+            self.raise401()
+        content = self.get_argument('content', None)
+        try:
+            print(content)
+            comment = TaskComment(content=content, author=user)
+            Task.objects(id=path[0]).update_one(push__comments=comment)
+            comment_data = document_to_json(
+                comment, filter_set=_COMMENT_FILTER)
+            self.set_status(201)
+            self.write(comment_data)
         except Exception as e:
             reason = e.message
             self.raise400(reason=reason)
