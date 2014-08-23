@@ -81,6 +81,7 @@ class OAuth2Validator(RequestValidator):
         # Whichever authentication method suits you, HTTP Basic might work
         client_secret = decode_basic_auth(request.headers['Authorization'])
         client_id = request.client_id
+        print(client_secret, client_id)
         client = Client.objects(
             client_id=client_id, client_secret=client_secret).first()
         request.client = client
@@ -126,7 +127,12 @@ class OAuth2Validator(RequestValidator):
         # Clients should only be allowed to use one type of grant.
         # In this case, it must be "authorization_code" or "refresh_token"
         client = Client.objects(client_id=client_id).first()
-        return client.grant_type == grant_type
+        # This might not be the correct implementation
+        cg_type = client.grant_type
+        if cg_type == 'authorization_code' or cg_type == 'password':
+            if grant_type == 'refresh_token':
+                return True
+        return cg_type == grant_type
 
     def save_bearer_token(self, token, request, *args, **kwargs):
         # Remember to associate it with request.scopes, request.user and
@@ -156,9 +162,24 @@ class OAuth2Validator(RequestValidator):
             return valid
         return False
 
+    def validate_refresh_token(self, refresh_token, client, request,
+                               *args, **kwargs):
+        token = Token.objects(refresh_token=refresh_token).first()
+        if token:
+            if client != token.client:
+                return False
+            scopes = client.scopes if client.scopes else client.default_scopes
+            if not (set(token.scopes) & set(scopes)):
+                return False
+            request.user = token.user
+            return True
+        return False
+
     def get_original_scopes(self, refresh_token, request, *args, **kwargs):
         # Obtain the token associated with the given refresh_token and
         # return its scopes, these will be passed on to the refreshed
         # access token if the client did not specify a scope during the
         # request.
-        pass
+        token = Token.objects(refresh_token=refresh_token).first()
+        if token:
+            return token.scopes

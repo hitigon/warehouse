@@ -2,7 +2,7 @@
 #
 # @name: api/auth.py
 # @create: Aug. 10th, 2014
-# @update: Aug. 21th, 2014
+# @update: Aug. 22th, 2014
 # @author: hitigon@gmail.com
 import json
 from urlparse import urlparse, parse_qs
@@ -14,6 +14,7 @@ from base import BaseHandler
 from models.user import User
 from models.oauth.client import Client
 from models.oauth.credential import Credential
+from models.oauth.token import Token
 
 
 class AuthHandler(BaseHandler):
@@ -79,6 +80,7 @@ class TokenHandler(BaseHandler):
         scope = self.get_argument('scope', None)
         username = self.get_argument('username', None)
         password = self.get_argument('password', None)
+        refresh_token = self.get_argument('refresh_token', None)
 
         try:
             msg = 'Token request failed: %s'
@@ -104,6 +106,10 @@ class TokenHandler(BaseHandler):
             elif grant_type == 'client_credentials':
                 body += 'grant_type=client_credentials&'
                 body += 'scope=%s&' % scope
+            elif grant_type == 'refresh_token':
+                body += 'grant_type=refresh_token&'
+                body += 'refresh_token=%s&' % refresh_token
+                body += 'client_id=%s&' % client_id
             else:
                 raise Exception(msg % 'unknown grant_type')
             headers, body, status = self.endpoint.create_token_response(
@@ -113,7 +119,9 @@ class TokenHandler(BaseHandler):
 
             # password login behaviors
             data = json.loads(body)
-            data['username'] = username
+            token = Token.objects(access_token=data['access_token']).first()
+            user = token.user
+            data['username'] = user.username
             self.set_status(201)
             self.write(data)
         except Exception as e:
