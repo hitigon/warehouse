@@ -183,3 +183,11 @@ class OAuth2Validator(RequestValidator):
         token = Token.objects(refresh_token=refresh_token).first()
         if token:
             return token.scopes
+
+    def revoke_token(self, token, token_type_hint, request, *args, **kwargs):
+        if not token_type_hint or token_type_hint == 'access_token':
+            t = Token.objects(access_token=token)
+        elif token_type_hint == 'refresh_token':
+            t = Token.objects(refresh_token=token)
+        t.delete()
+        # request.callback = self.revoke_token_callback

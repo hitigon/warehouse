@@ -25,6 +25,7 @@ settings = {
 application = tornado.web.Application([
     (r'/authorize/?', auth.AuthHandler),
     (r'/token/?', auth.TokenHandler),
+    (r'/revoke_token/?', auth.RevokeTokenHandler),
     (r'/signup/?', user.RegisterHandler),
     (r'/profile/?', user.ProfileHandler),
     (r'/profile/([\w.]+)/?', user.ProfileHandler),

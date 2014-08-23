@@ -127,3 +127,23 @@ class TokenHandler(BaseHandler):
         except Exception as e:
             reason = e.message
             self.raise400(reason=reason)
+
+
+class RevokeTokenHandler(BaseHandler):
+
+    def post(self, *args, **kwargs):
+        token = self.get_argument('token', None)
+        client_id = self.get_argument('client_id', None)
+
+        try:
+            base_uri, uri = self.get_uri()
+            headers = self.get_headers()
+            body = 'token=%s&' % token
+            body += 'client_id=%s&' % client_id
+            headers, body, status = self.endpoint.create_revocation_response(
+                uri, headers=headers, body=body, http_method='POST')
+            self.set_status(204)
+            self.finish()
+        except Exception as e:
+            reason = e.message
+            self.raise400(reason=reason)
