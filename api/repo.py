@@ -39,9 +39,6 @@ class RepoHandler(BaseHandler):
         # /repos?team=
         # /repos?project=
         # /repos?tag=
-        # username = self.get_argument('username', None)
-        # team = self.get_argument('team_name', None)
-        # project = self.get_argument('project_name', None)
         if 'user' not in kwargs:
             self.raise401()
         user = kwargs['user']
@@ -66,8 +63,18 @@ class RepoHandler(BaseHandler):
                 self.raise404()
             repo_data = document_to_json(repo, filter_set=_FILTER)
         else:
-            repo = Repo.objects(owner=user).all()
-            repo_data = query_to_json(repo, filter_set=_FILTER)
+            username = self.get_argument('username', None)
+            team = self.get_argument('team_name', None)
+            project = self.get_argument('project_name', None)
+            if username:
+                pass
+            elif team:
+                pass
+            elif project:
+                pass
+            else:
+                repos = Repo.objects(owner=user).all()
+            repo_data = query_to_json(repos, filter_set=_FILTER)
         if repo_type and repo_contents:
             repo_data['repo_info'] = repo_info
             repo_data['repo_type'] = repo_type
@@ -185,6 +192,9 @@ def get_repo_contents(scm_repo, fields):
         patches = scm_repo.get_patches(fields[1])
         response = scm_repo.get_commit(fields[1])
         response['patches'] = patches
+    elif obj_type == 'commits':
+        # TODO
+        response = scm_repo.get_commits()
     return obj_type, current_query, response
 
 

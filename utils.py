@@ -56,8 +56,12 @@ def create_password(password):
     return bcrypt.hashpw(password.encode(), bcrypt.gensalt())
 
 
-def decode_basic_auth(s):
-    return base64.b64decode(s.split()[1])
+def decode_basic_auth(s, decode=False):
+    v = s.split()[1]
+    if decode:
+        return base64.b64decode(v)
+    else:
+        return v
 
 
 def get_uri(data):

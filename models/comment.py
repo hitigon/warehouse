@@ -37,8 +37,8 @@ class CodeComment(EmbeddedDocument):
 
 
 class CodeReview(EmbeddedDocument):
-    content = StringField(required=True)
     from user import User
+    content = StringField(required=True)
     reviewer = ReferenceField(User)
     approved = BooleanField(default=False)
     create_time = DateTimeField(default=get_utc_time())

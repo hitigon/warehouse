@@ -257,7 +257,6 @@ class TaskCommentHandler(BaseHandler):
             self.raise401()
         content = self.get_argument('content', None)
         try:
-            print(content)
             comment = TaskComment(content=content, author=user)
             Task.objects(id=path[0]).update_one(push__comments=comment)
             comment_data = document_to_json(

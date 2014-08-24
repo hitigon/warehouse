@@ -2,7 +2,7 @@
 #
 # @name: oauth/validator.py
 # @create: Aug. 9th, 2014
-# @update: Aug. 22th, 2014
+# @update: Aug. 23th, 2014
 # @author: hitigon@gmail.com
 from __future__ import print_function
 import bcrypt
@@ -81,7 +81,6 @@ class OAuth2Validator(RequestValidator):
         # Whichever authentication method suits you, HTTP Basic might work
         client_secret = decode_basic_auth(request.headers['Authorization'])
         client_id = request.client_id
-        print(client_secret, client_id)
         client = Client.objects(
             client_id=client_id, client_secret=client_secret).first()
         request.client = client

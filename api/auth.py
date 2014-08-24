@@ -2,7 +2,7 @@
 #
 # @name: api/auth.py
 # @create: Aug. 10th, 2014
-# @update: Aug. 22th, 2014
+# @update: Aug. 23th, 2014
 # @author: hitigon@gmail.com
 import json
 from urlparse import urlparse, parse_qs
@@ -89,6 +89,7 @@ class TokenHandler(BaseHandler):
             body = ''
             base_uri, uri = self.get_uri()
             headers = self.get_headers()
+            # TODO body
             if grant_type == 'authorization_code':
                 if not code:
                     raise Exception(msg % 'missing code')
@@ -102,7 +103,7 @@ class TokenHandler(BaseHandler):
                 body += 'grant_type=password&'
                 body += 'client_id=%s&' % client_id
                 body += 'username=%s&password=%s&' % (username, password)
-                body += 'scope=%s&' % scope if len(scope) > 0 else ''
+                body += 'scope=%s&' % scope if scope else ''
             elif grant_type == 'client_credentials':
                 body += 'grant_type=client_credentials&'
                 body += 'scope=%s&' % scope
