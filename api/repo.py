@@ -193,7 +193,7 @@ def get_repo_contents(scm_repo, fields):
         response = scm_repo.get_commit(fields[1])
         response['patches'] = patches
     elif obj_type == 'commits':
-        # TODO
+        # TODO - Must add limits
         response = scm_repo.get_commits()
     return obj_type, current_query, response
 

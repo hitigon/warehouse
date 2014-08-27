@@ -2,7 +2,7 @@
 #
 # @name: api/project.py
 # @create: Apr. 25th, 2014
-# @update: Aug. 22th, 2014
+# @update: Aug. 27th, 2014
 # @author: hitigon@gmail.com
 from __future__ import print_function
 from oauth.protector import authenticated
@@ -42,10 +42,6 @@ class ProjectHandler(BaseHandler):
 
     @authenticated(scopes=['projects'])
     def get(self, *args, **kwargs):
-        # /projects/
-        # /projects/:name (+)
-        # /projects/?username= (*)
-        # /projects/?team= (*)
         if 'user' not in kwargs:
             self.raise401()
 
@@ -59,7 +55,29 @@ class ProjectHandler(BaseHandler):
                 self.raise401()
             project_data = document_to_json(project, filter_set=_FILTER)
         else:
-            project = Project.objects(members__in=[user]).all()
+            team_name = self.get_argument('team', None)
+            username = self.get_argument('username', None)
+
+            if team_name:
+                team = Team.objects(name=team_name).first()
+                if not team:
+                    self.raise404()
+                if user not in team.members:
+                    self.raise403()
+
+            if username:
+                if username != user.username:
+                    user = User.objects(username=username).first()
+                    if not user:
+                        self.raise404()
+
+            if username and team_name:
+                project = Project.objects(
+                    members__in=[user], teams__in=[team]).all()
+            elif team_name:
+                project = Project.objects(teams__in=[team]).all()
+            else:
+                project = Project.objects(members__in=[user]).all()
             project_data = query_to_json(project, filter_set=_FILTER)
         self.write(project_data)
 
