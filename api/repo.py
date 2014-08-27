@@ -2,7 +2,7 @@
 #
 # @name: api/repo.py
 # @create: Apr. 22th, 2014
-# @update: Aug. 22th, 2014
+# @update: Aug. 27th, 2014
 # @author: hitigon@gmail.com
 from __future__ import print_function
 import re
@@ -12,6 +12,7 @@ from base import BaseHandler
 from oauth.protector import authenticated
 from scm.git import GitRepo
 from models.repo import Repo
+from models.team import Team
 
 _SUB_FILTER = {
     'password': False,
@@ -33,12 +34,6 @@ class RepoHandler(BaseHandler):
 
     @authenticated(scopes=['repos'])
     def get(self, *args, **kwargs):
-        # /repos
-        # /repos/:path
-        # /repos?username=
-        # /repos?team=
-        # /repos?project=
-        # /repos?tag=
         if 'user' not in kwargs:
             self.raise401()
         user = kwargs['user']
@@ -63,15 +58,18 @@ class RepoHandler(BaseHandler):
                 self.raise404()
             repo_data = document_to_json(repo, filter_set=_FILTER)
         else:
-            username = self.get_argument('username', None)
-            team = self.get_argument('team_name', None)
-            project = self.get_argument('project_name', None)
-            if username:
-                pass
-            elif team:
-                pass
-            elif project:
-                pass
+            team_name = self.get_argument('team_name', None)
+            try:
+                team_name = parse_path(team_name)[0]
+            except IndexError:
+                team_name = None
+            if team_name:
+                team = Team.objects(name=team_name).first()
+                if not team:
+                    self.raise404()
+                if user not in team.member:
+                    self.raise403()
+                repos = Repo.objects(team=team).all()
             else:
                 repos = Repo.objects(owner=user).all()
             repo_data = query_to_json(repos, filter_set=_FILTER)

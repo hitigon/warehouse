@@ -2,7 +2,7 @@
 #
 # @name: api/project.py
 # @create: Jun. 10th, 2014
-# @update: Aug. 23th, 2014
+# @update: Aug. 27th, 2014
 # @author: hitigon@gmail.com
 from __future__ import print_function
 from utils import get_utc_time
@@ -47,13 +47,6 @@ class TaskHandler(BaseHandler):
 
     @authenticated(scopes=['tasks'])
     def get(self, *args, **kwargs):
-        # 1, all tasks in your projects
-        # 2, all user's tasks
-        # 3, specified task (id)
-        # /tasks
-        # /tasks/:id
-        # /tasks/?project=
-        # /tasks/?username=
         if 'user' not in kwargs:
             self.raise401()
 
@@ -68,27 +61,18 @@ class TaskHandler(BaseHandler):
                 self.raise401()
             task_data = document_to_json(task, filter_set=_FILTER)
         else:
-            username = self.get_argument('username', None)
             project_name = self.get_argument('project', None)
             try:
                 project_name = parse_path(project_name)[0]
             except IndexError:
                 project_name = None
-            try:
-                username = parse_path(username)[0]
-            except IndexError:
-                username = None
-            if project_name and username:
-                user = User.objects(username=username).first()
+            if project_name:
                 project = Project.objects(name=project_name).first()
-                tasks = Task.objects(
-                    project=project, assign_to__in=[user]).all()
-            elif project_name:
-                project = Project.objects(name=project_name).first()
+                if not project:
+                    self.raise404()
+                if user not in project.members:
+                    self.raise403()
                 tasks = Task.objects(project=project).all()
-            elif username:
-                user = User.objects(username=username).first()
-                tasks = Task.objects(assign_to__in=[user]).all()
             else:
                 projects = Project.objects(members__in=[user]).all()
                 tasks = []

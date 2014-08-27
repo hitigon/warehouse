@@ -56,25 +56,16 @@ class ProjectHandler(BaseHandler):
             project_data = document_to_json(project, filter_set=_FILTER)
         else:
             team_name = self.get_argument('team', None)
-            username = self.get_argument('username', None)
-
+            try:
+                team_name = parse_path(team_name)[0]
+            except IndexError:
+                team_name = None
             if team_name:
                 team = Team.objects(name=team_name).first()
                 if not team:
                     self.raise404()
                 if user not in team.members:
                     self.raise403()
-
-            if username:
-                if username != user.username:
-                    user = User.objects(username=username).first()
-                    if not user:
-                        self.raise404()
-
-            if username and team_name:
-                project = Project.objects(
-                    members__in=[user], teams__in=[team]).all()
-            elif team_name:
                 project = Project.objects(teams__in=[team]).all()
             else:
                 project = Project.objects(members__in=[user]).all()

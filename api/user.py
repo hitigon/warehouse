@@ -2,7 +2,7 @@
 #
 # @name: api/user.py
 # @create: Apr. 27th, 2014
-# @update: Aug. 22th, 2014
+# @update: Aug. 27th, 2014
 # @author: hitigon@gmail.com
 from __future__ import print_function
 from utils import parse_path, create_password

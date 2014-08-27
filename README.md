@@ -25,6 +25,8 @@ REST API
 
 `GET /projects/`
 
+`GET /projects/?team=[team_name]`
+
 `GET /projects/:name`
 
 `POST /projects/`
@@ -35,10 +37,50 @@ REST API
 
 #### Tasks
 
+`GET /tasks/`
+
+`GET /tasks/?project=[project_name]`
+
+`POST /tasks/`
+
+`PUT /tasks/:name`
+
+`DELETE /tasks/:name`
+
 #### Repos
+
+`GET /repos/`
+
+`GET /repos/?team=[team_name]`
+
+`POST /repos/`
+
+`PUT /repos/:name`
+
+`DELETE /repos/:name`
 
 #### Teams
 
+`GET /teams/`
+
+`POST /teams/`
+
+`PUT /teams/:name`
+
+`DELETE /teams/:name`
+
 #### Profile
 
+`GET /profile/`
+
+`GET /profile/:name`
+
 #### Auth
+
+`GET /authorize/`
+
+`POST /authorize/`
+
+`POST /token/`
+
+`POST /revoke_token/`
