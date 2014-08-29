@@ -2,7 +2,7 @@
 #
 # @name: api/repo.py
 # @create: Apr. 22th, 2014
-# @update: Aug. 27th, 2014
+# @update: Aug. 29th, 2014
 # @author: hitigon@gmail.com
 from __future__ import print_function
 import re
@@ -44,6 +44,9 @@ class RepoHandler(BaseHandler):
         repo_tags = None
         repo_info = None
         if args:
+            # author = self.get_argument('author', None)
+            limits = self.get_argument('limits', None)
+            start = self.get_argument('start', None)
             path = parse_path(args[0])
             if not path:
                 self.raise404()
@@ -53,7 +56,7 @@ class RepoHandler(BaseHandler):
                 repo_info = scm_repo.get_info()
                 repo_branches, repo_tags = get_repo_branches_tags(scm_repo)
                 repo_type, repo_query, repo_contents = get_repo_contents(
-                    scm_repo, path[1:])
+                    scm_repo, path[1:], limits=limits, start=start)
             if not repo_contents:
                 self.raise404()
             repo_data = document_to_json(repo, filter_set=_FILTER)
@@ -159,7 +162,7 @@ class RepoHandler(BaseHandler):
             self.raise400(reason=reason)
 
 
-def get_repo_contents(scm_repo, fields):
+def get_repo_contents(scm_repo, fields, **kwargs):
     try:
         obj_type = fields[0]
     except IndexError:
@@ -191,8 +194,22 @@ def get_repo_contents(scm_repo, fields):
         response = scm_repo.get_commit(fields[1])
         response['patches'] = patches
     elif obj_type == 'commits':
-        # TODO - Must add limits
-        response = scm_repo.get_commits()
+        limits = kwargs['limits'] if 'limits' in kwargs else None
+        start = kwargs['start'] if 'start' in kwargs else None
+        if limits:
+            try:
+                limits = int(limits)
+            except:
+                limits = 10
+        if limits and start:
+            response = scm_repo.get_commits(limits, start)
+        elif start:
+            response = scm_repo.get_commits(oid_or_commit=start)
+        elif limits:
+            response = scm_repo.get_commits(depth=limits)
+        else:
+            response = scm_repo.get_commits()
+        print(response)
     return obj_type, current_query, response
 
 

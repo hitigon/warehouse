@@ -2,7 +2,7 @@
 #
 # @name: scm/git.py
 # @create: Apr. 21th, 2014
-# @update: Aug. 24th, 2014
+# @update: Aug. 29th, 2014
 # @author: hitigon@gmail.com
 from __future__ import unicode_literals
 from __future__ import print_function
@@ -158,16 +158,23 @@ class GitRepo(object):
             print(e)
         return None
 
-    def get_commits(self, oid_or_commit=None):
+    def get_commits(self, depth=10, oid_or_commit=None):
         result = []
+        if depth == 0:
+            return result
         if oid_or_commit:
             commit = self.get_commit(oid_or_commit)
         else:
             commit = self.get_current_commit()
+        if not commit:
+            return result
+        # TODO: starting from a commit or its parent
+        # TODO: author
         result.append(commit)
+        depth -= 1
         if commit and commit['parent']:
             for parent in commit['parent']:
-                    result.extend(self.get_commits(parent))
+                    result.extend(self.get_commits(depth, parent))
         return result
 
     def get_commits_by_branch(self, name, path=None):
