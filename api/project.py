@@ -2,7 +2,7 @@
 #
 # @name: api/project.py
 # @create: Apr. 25th, 2014
-# @update: Aug. 27th, 2014
+# @update: Aug. 29th, 2014
 # @author: hitigon@gmail.com
 from __future__ import print_function
 from oauth.protector import authenticated
@@ -56,19 +56,37 @@ class ProjectHandler(BaseHandler):
             project_data = document_to_json(project, filter_set=_FILTER)
         else:
             team_name = self.get_argument('team', None)
+            limit = self.get_argument('limit', None)
+            start = self.get_argument('start', None)
             try:
                 team_name = parse_path(team_name)[0]
             except IndexError:
                 team_name = None
+            try:
+                limit = int(limit)
+            except Exception:
+                limit = None
+            try:
+                start = int(start)
+            except Exception:
+                start = None
             if team_name:
                 team = Team.objects(name=team_name).first()
                 if not team:
                     self.raise404()
                 if user not in team.members:
                     self.raise403()
-                project = Project.objects(teams__in=[team]).all()
+                project = Project.objects(teams__in=[team])
             else:
-                project = Project.objects(members__in=[user]).all()
+                project = Project.objects(members__in=[user])
+            if limit and start:
+                project = project[start:start + limit]
+            elif limit:
+                project = project[:limit]
+            elif start:
+                project = project[start:]
+            else:
+                project = project.all()
             project_data = query_to_json(project, filter_set=_FILTER)
         self.write(project_data)
 

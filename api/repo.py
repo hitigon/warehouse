@@ -45,7 +45,7 @@ class RepoHandler(BaseHandler):
         repo_info = None
         if args:
             # author = self.get_argument('author', None)
-            limits = self.get_argument('limits', None)
+            limit = self.get_argument('limit', None)
             start = self.get_argument('start', None)
             path = parse_path(args[0])
             if not path:
@@ -56,7 +56,7 @@ class RepoHandler(BaseHandler):
                 repo_info = scm_repo.get_info()
                 repo_branches, repo_tags = get_repo_branches_tags(scm_repo)
                 repo_type, repo_query, repo_contents = get_repo_contents(
-                    scm_repo, path[1:], limits=limits, start=start)
+                    scm_repo, path[1:], limit=limit, start=start)
             if not repo_contents:
                 self.raise404()
             repo_data = document_to_json(repo, filter_set=_FILTER)
@@ -194,19 +194,19 @@ def get_repo_contents(scm_repo, fields, **kwargs):
         response = scm_repo.get_commit(fields[1])
         response['patches'] = patches
     elif obj_type == 'commits':
-        limits = kwargs['limits'] if 'limits' in kwargs else None
+        limit = kwargs['limit'] if 'limit' in kwargs else None
         start = kwargs['start'] if 'start' in kwargs else None
-        if limits:
+        if limit:
             try:
-                limits = int(limits)
+                limit = int(limit)
             except:
-                limits = 10
-        if limits and start:
-            response = scm_repo.get_commits(limits, start)
+                limit = 10
+        if limit and start:
+            response = scm_repo.get_commits(limit, start)
         elif start:
             response = scm_repo.get_commits(oid_or_commit=start)
-        elif limits:
-            response = scm_repo.get_commits(depth=limits)
+        elif limit:
+            response = scm_repo.get_commits(depth=limit)
         else:
             response = scm_repo.get_commits()
         print(response)
