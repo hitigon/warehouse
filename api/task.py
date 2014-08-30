@@ -82,7 +82,7 @@ class TaskHandler(BaseHandler):
                     self.raise404()
                 if user not in project.members:
                     self.raise403()
-                tasks = Task.objects(project=project).all()
+                tasks = Task.objects(project=project)
             else:
                 projects = Project.objects(members__in=[user]).all()
                 tasks = []
@@ -236,8 +236,25 @@ class TaskCommentHandler(BaseHandler):
         user = kwargs['user']
         if user not in task.project.members:
             self.raise401()
-
+        limit = self.get_argument('limit', None)
+        start = self.get_argument('start', None)
+        try:
+            limit = int(limit)
+        except:
+            limit = None
+        try:
+            start = int(start)
+        except:
+            start = None
         comments = task.comments
+        if limit and start:
+            comments = task.comments[start:start+limit]
+        elif limit:
+            comments = task.comments[:limit]
+        elif start:
+            comments = task.comments[start:]
+        else:
+            comments = task.comments
         comment_data = query_to_json(comments, filter_set=_COMMENT_FILTER)
         self.write(comment_data)
 
