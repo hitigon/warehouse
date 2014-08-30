@@ -2,7 +2,7 @@
 #
 # @name: api/team.py
 # @create: Apr. 25th, 2014
-# @update: Aug. 22th, 2014
+# @update: Aug. 29th, 2014
 # @author: hitigon@gmail.com
 from __future__ import print_function
 from oauth.protector import authenticated
@@ -29,9 +29,6 @@ class TeamHandler(BaseHandler):
 
     @authenticated(scopes=['teams'])
     def get(self, *args, **kwargs):
-        # /teams/
-        # /teams/:name
-        # /teams/?username=
         if 'user' not in kwargs:
             self.raise401()
 
@@ -43,14 +40,30 @@ class TeamHandler(BaseHandler):
                 self.raise404()
             team_data = document_to_json(team, filter_set=_FILTER)
         else:
-            username = self.get_argument('username', None)
+            # username = self.get_argument('username', None)
+            # try:
+            #     username = parse_path(username)[0]
+            # except IndexError:
+            #     username = None
+            # if username:
+            #     user = User.objects(username=username).fisrt()
+            limit = self.get_argument('limit', None)
+            start = self.get_argument('start', None)
             try:
-                username = parse_path(username)[0]
-            except IndexError:
-                username = None
-            if username:
-                user = User.objects(username=username).fisrt()
-            teams = Team.objects(members__in=[user]).all()
+                limit = int(limit)
+            except:
+                limit = None
+            try:
+                start = int(start)
+            except:
+                start = None
+            teams = Team.objects(members__in=[user])
+            if limit and start:
+                teams = teams[start: start+limit]
+            elif limit:
+                teams = teams[:limit]
+            elif start:
+                teams = teams[start:]
             team_data = query_to_json(teams, filter_set=_FILTER)
         self.write(team_data)
 

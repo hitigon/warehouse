@@ -2,7 +2,7 @@
 #
 # @name: api/project.py
 # @create: Jun. 10th, 2014
-# @update: Aug. 27th, 2014
+# @update: Aug. 29th, 2014
 # @author: hitigon@gmail.com
 from __future__ import print_function
 from utils import get_utc_time
@@ -62,6 +62,16 @@ class TaskHandler(BaseHandler):
             task_data = document_to_json(task, filter_set=_FILTER)
         else:
             project_name = self.get_argument('project', None)
+            limit = self.get_argument('limit', None)
+            start = self.get_argument('start', None)
+            try:
+                limit = int(limit)
+            except:
+                limit = None
+            try:
+                start = int(start)
+            except:
+                start = None
             try:
                 project_name = parse_path(project_name)[0]
             except IndexError:
@@ -79,6 +89,12 @@ class TaskHandler(BaseHandler):
                 for project in projects:
                     ts = Task.objects(project=project).all()
                     tasks += list(ts)
+            if limit and start:
+                tasks = tasks[start: start+limit]
+            elif limit:
+                tasks = tasks[:limit]
+            elif start:
+                tasks = tasks[start:]
             task_data = query_to_json(tasks, filter_set=_FILTER)
         self.write(task_data)
 

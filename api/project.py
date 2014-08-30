@@ -85,8 +85,6 @@ class ProjectHandler(BaseHandler):
                 project = project[:limit]
             elif start:
                 project = project[start:]
-            else:
-                project = project.all()
             project_data = query_to_json(project, filter_set=_FILTER)
         self.write(project_data)
 

@@ -2,7 +2,7 @@
 #
 # @name: api/client.py
 # @create: Aug. 10th, 2014
-# @update: Aug. 22th, 2014
+# @update: Aug. 29th, 2014
 # @author: hitigon@gmail.com
 from __future__ import print_function
 from utils import parse_path, parse_listed_strs
@@ -41,7 +41,23 @@ class ClientHandler(BaseHandler):
                 self.raise404()
             client_data = document_to_json(client, filter_set=_FILTER)
         else:
-            clients = Client.objects(user=user).all()
+            limit = self.get_argument('limit', None)
+            start = self.get_argument('start', None)
+            try:
+                limit = int(limit)
+            except:
+                limit = None
+            try:
+                start = int(start)
+            except:
+                start = None
+            clients = Client.objects(user=user)
+            if limit and start:
+                clients = clients[start: start+limit]
+            elif limit:
+                clients = clients[:limit]
+            elif start:
+                clients = clients[start:]
             client_data = query_to_json(clients, filter_set=_FILTER)
         self.write(client_data)
 

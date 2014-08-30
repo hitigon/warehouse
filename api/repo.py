@@ -43,10 +43,14 @@ class RepoHandler(BaseHandler):
         repo_branches = None
         repo_tags = None
         repo_info = None
+        limit = self.get_argument('limit', None)
+        start = self.get_argument('start', None)
+        try:
+            limit = int(limit)
+        except:
+            limit = None
         if args:
             # author = self.get_argument('author', None)
-            limit = self.get_argument('limit', None)
-            start = self.get_argument('start', None)
             path = parse_path(args[0])
             if not path:
                 self.raise404()
@@ -63,6 +67,10 @@ class RepoHandler(BaseHandler):
         else:
             team_name = self.get_argument('team_name', None)
             try:
+                start = int(start)
+            except:
+                start = None
+            try:
                 team_name = parse_path(team_name)[0]
             except IndexError:
                 team_name = None
@@ -72,9 +80,15 @@ class RepoHandler(BaseHandler):
                     self.raise404()
                 if user not in team.member:
                     self.raise403()
-                repos = Repo.objects(team=team).all()
+                repos = Repo.objects(team=team)
             else:
-                repos = Repo.objects(owner=user).all()
+                repos = Repo.objects(owner=user)
+            if limit and start:
+                repos = repos[start: start+limit]
+            elif limit:
+                repos = repos[:limit]
+            elif start:
+                repos = repos[start:]
             repo_data = query_to_json(repos, filter_set=_FILTER)
         if repo_type and repo_contents:
             repo_data['repo_info'] = repo_info
@@ -196,11 +210,11 @@ def get_repo_contents(scm_repo, fields, **kwargs):
     elif obj_type == 'commits':
         limit = kwargs['limit'] if 'limit' in kwargs else None
         start = kwargs['start'] if 'start' in kwargs else None
-        if limit:
-            try:
-                limit = int(limit)
-            except:
-                limit = 10
+        # if limit:
+        #     try:
+        #         limit = int(limit)
+        #     except:
+        #         limit = 10
         if limit and start:
             response = scm_repo.get_commits(limit, start)
         elif start:
