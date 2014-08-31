@@ -47,10 +47,25 @@ class ProjectHandler(BaseHandler):
     def get(self, *args, **kwargs):
         """Retrieve the resources of projects for the current user.
 
-        If the param `args` is provided, it should be the name of a project
-        that the current user involved;
+        If `*args` is provided by matching the URL pattern, the first element
+        in the args is considered as a project name, then the project data will
+        be retrieved from Database and send back to the client and the source
+        owner in the format of JSON.
+        Otherwise, it responses with a list of projects parcipated by the
+        user. The request can provide three arugments: `team`, `limit` and
+        `start`. `team` is used for querying the projects of one team by
+        its name, which the user is one of its memebers. `limit` is
+        the max number of items sent back to the client. `start` is the
+        starting index of the querying results.
 
-        Otherwise, by default, it returns all of the user's projects
+        Only authenticated user/resouce owner can access by using access_token,
+        and his/her scopes must include `projects`.
+
+        The retrieved resource should always be related to the user, and it is
+        not allowed to access others' projects or other teams' projects.
+
+        .. todo::
+            restrict the response data and add default limits
         """
         if 'user' not in kwargs:
             self.raise401()
@@ -100,6 +115,11 @@ class ProjectHandler(BaseHandler):
 
     @authenticated(scopes=['projects'])
     def post(self, *args, **kwargs):
+        """Create a new project by providing the details about the project.
+        If the validation and saving are successful, it response with the
+        project data and 201 status.
+        Otherwise, it gives 4XX status and error messages.
+        """
         name = self.get_argument('name', None)
         description = self.get_argument('description', None)
         url = self.get_argument('url', None)
@@ -157,10 +177,8 @@ class ProjectHandler(BaseHandler):
 
     @authenticated(scopes=['projects'])
     def put(self, *args, **kwargs):
-        # the creator of the project might be neither
-        # the leader nor the member
-        # it causes a problem that the creator cannot
-        # access, modify and delete the project
+        """Update a project by its name and other information.
+        """
         if 'user' not in kwargs or not args:
             self.raise401()
         name = self.get_argument('name', None)
@@ -228,6 +246,8 @@ class ProjectHandler(BaseHandler):
 
     @authenticated(scopes=['projects'])
     def delete(self, *args, **kwargs):
+        """Delete a project by its name provided in URL.
+        """
         if 'user' not in kwargs or not args:
             self.raise401()
 
