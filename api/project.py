@@ -1,8 +1,9 @@
+# -*- coding: utf-8 -*-
 #!/usr/bin/env python
 #
 # @name: api/project.py
 # @create: Apr. 25th, 2014
-# @update: Aug. 29th, 2014
+# @update: Aug. 30th, 2014
 # @author: hitigon@gmail.com
 from __future__ import print_function
 from oauth.protector import authenticated
@@ -37,11 +38,20 @@ _FILTER = {
     },
 }
 
+__all__ = ('ProjectHandler',)
+
 
 class ProjectHandler(BaseHandler):
 
     @authenticated(scopes=['projects'])
     def get(self, *args, **kwargs):
+        """Retrieve the resources of projects for the current user.
+
+        If the param `args` is provided, it should be the name of a project
+        that the current user involved;
+
+        Otherwise, by default, it returns all of the user's projects
+        """
         if 'user' not in kwargs:
             self.raise401()
 
